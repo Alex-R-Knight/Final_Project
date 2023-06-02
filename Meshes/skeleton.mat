@@ -1,0 +1,10 @@
+MeshMat
+1
+1
+1
+Skeleton_Body
+3
+Diffuse:skeleton_diffuse.png
+Bump:skeleton_bump.png
+Metallic:skeleton_diffuse.png
+0
