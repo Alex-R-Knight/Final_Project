@@ -95,6 +95,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Shaders", "Shaders", "{E566
 		Shaders\zxVertex.glsl = Shaders\zxVertex.glsl
 	EndProjectSection
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Render Project", "IlluminationProject\IlluminationProject.vcxproj", "{D8DA6C7C-62C1-49B6-89BD-EEC033B61247}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -247,6 +249,14 @@ Global
 		{15681E3C-A747-42F0-B091-5F1300F14F52}.Release|x64.Build.0 = Release|x64
 		{15681E3C-A747-42F0-B091-5F1300F14F52}.Release|x86.ActiveCfg = Release|Win32
 		{15681E3C-A747-42F0-B091-5F1300F14F52}.Release|x86.Build.0 = Release|Win32
+		{D8DA6C7C-62C1-49B6-89BD-EEC033B61247}.Debug|x64.ActiveCfg = Debug|x64
+		{D8DA6C7C-62C1-49B6-89BD-EEC033B61247}.Debug|x64.Build.0 = Debug|x64
+		{D8DA6C7C-62C1-49B6-89BD-EEC033B61247}.Debug|x86.ActiveCfg = Debug|Win32
+		{D8DA6C7C-62C1-49B6-89BD-EEC033B61247}.Debug|x86.Build.0 = Debug|Win32
+		{D8DA6C7C-62C1-49B6-89BD-EEC033B61247}.Release|x64.ActiveCfg = Release|x64
+		{D8DA6C7C-62C1-49B6-89BD-EEC033B61247}.Release|x64.Build.0 = Release|x64
+		{D8DA6C7C-62C1-49B6-89BD-EEC033B61247}.Release|x86.ActiveCfg = Release|Win32
+		{D8DA6C7C-62C1-49B6-89BD-EEC033B61247}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -269,6 +279,7 @@ Global
 		{55C75BC7-89C2-4B38-8118-CF8C26426E7A} = {26FF1E94-61DD-4E24-A071-50FA11CAC038}
 		{8274D442-89CD-4AC2-AA8E-A9FA621452ED} = {B12FA29E-1613-4E55-9C1D-B7DCD8A760D8}
 		{E566A197-30BB-4026-A92A-D44FB35F4C14} = {26FF1E94-61DD-4E24-A071-50FA11CAC038}
+		{D8DA6C7C-62C1-49B6-89BD-EEC033B61247} = {B12FA29E-1613-4E55-9C1D-B7DCD8A760D8}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {EE1CFC99-AD82-4869-B6CB-66D4733450DC}
