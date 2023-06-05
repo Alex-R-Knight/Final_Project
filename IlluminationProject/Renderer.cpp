@@ -11,7 +11,7 @@ const int POST_PASSES = 10;
 
 Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	sphere = Mesh::LoadFromMeshFile("Sphere.msh");
-	cube = Mesh::LoadFromMeshFile("OffsetCubeY.msh");
+	//cube = Mesh::LoadFromMeshFile("OffsetCubeY.msh");
 	quad = Mesh::GenerateQuad();
 	quad_L = Mesh::GenerateQuadHalf();
 	quad_R = Mesh::GenerateQuadHalf_2();
