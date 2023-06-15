@@ -21,6 +21,7 @@ out Vertex{
 	vec3 tangent; //New! Note , Vec3!
 	vec3 binormal; //New!
 	vec3 worldPos;
+	vec3 viewSpacePos;
 } OUT;
 
 void main(void) {
@@ -47,6 +48,10 @@ void main(void) {
 	vec4 worldPos = (modelMatrix * vec4(position, 1));
 
 	OUT.worldPos = worldPos.xyz;
+
+	vec4 viewSpacePos = viewMatrix * worldPos;
+
+	OUT.viewSpacePos = viewSpacePos.xyz;
 
 	OUT.colour = colour;
 	OUT.texCoord = texCoord;

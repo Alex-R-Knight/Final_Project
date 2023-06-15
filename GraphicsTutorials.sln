@@ -57,6 +57,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Shaders", "Shaders", "{E566
 		Shaders\basicVertex.glsl = Shaders\basicVertex.glsl
 		Shaders\bufferFragment.glsl = Shaders\bufferFragment.glsl
 		Shaders\bufferFragment_HeightMap.glsl = Shaders\bufferFragment_HeightMap.glsl
+		Shaders\bufferIGNFragment.glsl = Shaders\bufferIGNFragment.glsl
+		Shaders\bufferIGNFragment_HeightMap.glsl = Shaders\bufferIGNFragment_HeightMap.glsl
 		Shaders\bumpFragment.glsl = Shaders\bumpFragment.glsl
 		Shaders\bumpVertex.glsl = Shaders\bumpVertex.glsl
 		Shaders\colourFragment.glsl = Shaders\colourFragment.glsl
@@ -74,6 +76,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Shaders", "Shaders", "{E566
 		Shaders\pointLightvert.glsl = Shaders\pointLightvert.glsl
 		Shaders\processfrag.glsl = Shaders\processfrag.glsl
 		Shaders\processfrag_sobel_edge.glsl = Shaders\processfrag_sobel_edge.glsl
+		Shaders\raymarchfrag.glsl = Shaders\raymarchfrag.glsl
 		Shaders\reflectFragment.glsl = Shaders\reflectFragment.glsl
 		Shaders\reflectVertex.glsl = Shaders\reflectVertex.glsl
 		Shaders\SceneFragment.glsl = Shaders\SceneFragment.glsl
@@ -95,7 +98,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Shaders", "Shaders", "{E566
 		Shaders\zxVertex.glsl = Shaders\zxVertex.glsl
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Render Project", "IlluminationProject\IlluminationProject.vcxproj", "{D8DA6C7C-62C1-49B6-89BD-EEC033B61247}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Illumination Project", "IlluminationProject\IlluminationProject.vcxproj", "{D8DA6C7C-62C1-49B6-89BD-EEC033B61247}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -48,8 +48,12 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 		SOIL_LOAD_RGB, SOIL_CREATE_NEW_ID, 0);
 
 	glassTex = SOIL_load_OGL_texture(
-		TEXTUREDIR"stainedglass.tga", SOIL_LOAD_AUTO,
+		TEXTUREDIR"stainedglasstreetex.png", SOIL_LOAD_AUTO,
 		SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
+
+	//glassTex = SOIL_load_OGL_texture(
+	//	TEXTUREDIR"stainedglass.tga", SOIL_LOAD_AUTO,
+	//	SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
 
 	if (!earthTex || !earthBump || !grassTex || !grassBump || !nullBump || !cubeMap || !glassTex) {
 		return;
@@ -80,10 +84,10 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	pointLights = new Light[LIGHT_NUM];
 
 	heightShader = new Shader("BumpVertex.glsl", // reused!
-		"bufferFragment_HeightMap.glsl");
+		"bufferIGNFragment_HeightMap.glsl");
 
 	sceneShader = new Shader("BumpVertex.glsl", // reused!
-		"bufferFragment.glsl");
+		"bufferIGNFragment.glsl");
 
 	pointlightShader = new Shader("pointlightvert.glsl",
 		"pointlightfrag.glsl");
@@ -98,10 +102,10 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 		"SceneFragment.glsl");
 
 	animatedshader = new Shader("SkinningVertex_Deferred.glsl",
-		"bufferFragment.glsl");
+		"bufferIGNFragment.glsl");
 
 	meshshader = new Shader("BumpVertex.glsl",
-		"bufferFragment.glsl");
+		"bufferIGNFragment.glsl");
 
 	endshader = new Shader("TexturedVertex.glsl",
 		"texturedfragment.glsl");
@@ -112,10 +116,15 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	sobelShader = new Shader("TexturedVertex.glsl",
 		"processfrag_sobel_edge.glsl");
 
-	if (!sceneShader->LoadSuccess() || !pointlightShader->LoadSuccess()
-		|| !combineShader->LoadSuccess() || !skyboxShader->LoadSuccess()
-		|| !alphaShader->LoadSuccess() || !heightShader->LoadSuccess()
-		|| !blurShader->LoadSuccess() || !sobelShader->LoadSuccess()) {
+	marchShader = new Shader("TexturedVertex.glsl",
+		"raymarchfrag.glsl");
+
+	if (!sceneShader->LoadSuccess()			|| !pointlightShader->LoadSuccess()
+		|| !combineShader->LoadSuccess()	|| !skyboxShader->LoadSuccess()
+		|| !alphaShader->LoadSuccess()		|| !heightShader->LoadSuccess()
+		|| !meshshader->LoadSuccess()		|| !endshader->LoadSuccess()
+		|| !blurShader->LoadSuccess()		|| !sobelShader->LoadSuccess()
+		|| !animatedshader->LoadSuccess()	|| !marchShader->LoadSuccess()	) {
 		return;
 	}
 
@@ -209,9 +218,11 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	glGenFramebuffers(1, &pointLightFBO);
 	glGenFramebuffers(1, &processFBO);
 
-	GLenum buffers[2] = {
+	GLenum buffers[4] = {
 		GL_COLOR_ATTACHMENT0 ,
-		GL_COLOR_ATTACHMENT1
+		GL_COLOR_ATTACHMENT1 ,
+		GL_COLOR_ATTACHMENT2 ,
+		GL_COLOR_ATTACHMENT3
 	};
 
 	// Generate our scene depth texture ...
@@ -223,6 +234,8 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	GenerateScreenTexture(bufferDepthTex, true);
 	GenerateScreenTexture(bufferColourTex);
 	GenerateScreenTexture(bufferNormalTex);
+	GenerateScreenTexture(bufferStochasticNormalTex);
+	GenerateScreenTexture(bufferViewSpacePosTex);
 	GenerateScreenTexture(lightDiffuseTex);
 	GenerateScreenTexture(lightSpecularTex);
 
@@ -250,8 +263,10 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	glBindFramebuffer(GL_FRAMEBUFFER, bufferFBO);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, bufferColourTex, 0);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, bufferNormalTex, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, bufferStochasticNormalTex, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT3, GL_TEXTURE_2D, bufferViewSpacePosTex, 0);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, bufferDepthTex, 0);
-	glDrawBuffers(2, buffers);
+	glDrawBuffers(4, buffers);
 
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
 		return;
@@ -286,6 +301,14 @@ Renderer::~Renderer(void) {
 	delete combineShader;
 	delete pointlightShader;
 	delete skyboxShader;
+	delete alphaShader;
+	delete heightShader;
+	delete meshshader;
+	delete endshader;
+	delete blurShader;
+	delete sobelShader;
+	delete animatedshader;
+	delete marchShader;
 
 	delete heightMap;
 	delete camera;
@@ -302,6 +325,8 @@ Renderer::~Renderer(void) {
 	glDeleteTextures(1, &alphaDepthTex_2);
 	glDeleteTextures(1, &bufferColourTex);
 	glDeleteTextures(1, &bufferNormalTex);
+	glDeleteTextures(1, &bufferStochasticNormalTex);
+	glDeleteTextures(1, &bufferViewSpacePosTex);
 	glDeleteTextures(1, &bufferDepthTex);
 	glDeleteTextures(1, &lightDiffuseTex);
 	glDeleteTextures(1, &lightSpecularTex);
@@ -682,6 +707,22 @@ void Renderer::DrawAlphaMeshes() {
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
+void Renderer::RaymarchLighting()
+{
+	glBindFramebuffer(GL_FRAMEBUFFER, processFBO);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, processColourTex, 0);
+	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+	BindShader(marchShader);
+
+	glUniform1i(glGetUniformLocation(combineShader->GetProgram(), "directionTexture"), 0);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, bufferStochasticNormalTex);
+
+	projMatrix = Matrix4::Perspective(1.0f, 10000.0f, (float)width / (float)height, 45.0f);
+	glUniformMatrix4fv(glGetUniformLocation(marchShader->GetProgram(), "lensProjection"), 1, false, projMatrix.values);
+
+}
+
 void Renderer::DrawToScreen() {
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
@@ -698,8 +739,11 @@ void Renderer::DrawToScreen() {
 
 	glUniform1i(glGetUniformLocation(endshader->GetProgram(), "diffuseTex"), 0);
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, alphaColourTex);
+	//glBindTexture(GL_TEXTURE_2D, alphaColourTex);
 
+	//stochastic test
+	glBindTexture(GL_TEXTURE_2D, bufferStochasticNormalTex);
+	
 	if (twoCameras == false) {
 		quad->Draw();
 	}

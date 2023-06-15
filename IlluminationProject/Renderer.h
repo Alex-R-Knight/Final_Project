@@ -54,6 +54,8 @@ protected:
 
 	void DrawAlphaMeshes(); //Draw transparent meshes after
 
+	void RaymarchLighting();
+
 	void BuildNodeLists(SceneNode* from);
 	void SortNodeLists();
 	void ClearNodeLists();
@@ -83,6 +85,9 @@ protected:
 	Shader* blurShader; // for post-processing blur
 	Shader* sobelShader; // for post-processing sobel
 
+	//// Raymarch Shader ////
+	Shader* marchShader;
+
 	GLuint processFBO; //The FBO for post processing
 	GLuint processColourTex; //The texture for post processing
 
@@ -102,6 +107,10 @@ protected:
 	GLuint bufferColourTex; // Albedo goes here
 	GLuint bufferNormalTex; // Normals go here
 	GLuint bufferDepthTex; // Depth goes here
+	//...
+	// Global Illumination Part
+	GLuint bufferStochasticNormalTex; // Stochastic normals go here
+	GLuint bufferViewSpacePosTex; // Viewspace position goes here
 
 	GLuint pointLightFBO; //FBO for our lighting pass
 	GLuint lightDiffuseTex; // Store diffuse lighting
