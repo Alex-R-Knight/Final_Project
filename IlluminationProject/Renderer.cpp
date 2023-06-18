@@ -67,6 +67,10 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 
 	Vector3 heightmapSize = heightMap->GetHeightmapSize();
 
+	//std::cout << "X = " << heightmapSize.x << "\n";
+	//std::cout << "Y = " << heightmapSize.y << "\n";
+	//std::cout << "Z = " << heightmapSize.z << "\n";
+
 	camera = new Camera(10.0f, 0.0f, heightmapSize * Vector3(0.5f, 1.0f, 0.9f));
 
 	startPos = heightmapSize * Vector3(0.5f, 1.0f, 0.9f);
@@ -552,12 +556,34 @@ void Renderer::RenderScene() {
 
 	FillBuffers();
 	DrawPointLights();
+
+	// Raymarch
+	RaymarchLighting();
+
 	CombineBuffers();
 
 	DrawAlphaMeshes();
 
 	ClearNodeLists();
 }
+
+//void Renderer::RenderScene() {
+//	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+//	BuildNodeLists(root);
+//	SortNodeLists();
+//
+//	FillBuffers();
+//	DrawPointLights();
+//
+//	// Raymarch
+//	RaymarchLighting();
+//
+//	CombineBuffers();
+//
+//	DrawAlphaMeshes();
+//
+//	ClearNodeLists();
+//}
 
 void Renderer::DrawSkybox() {
 	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
@@ -682,6 +708,10 @@ void Renderer::CombineBuffers() {
 	glActiveTexture(GL_TEXTURE2);
 	glBindTexture(GL_TEXTURE_2D, lightSpecularTex);
 
+	glUniform1i(glGetUniformLocation(combineShader->GetProgram(), "globalLight"), 3);
+	glActiveTexture(GL_TEXTURE3);
+	glBindTexture(GL_TEXTURE_2D, processColourTex);
+
 	quad->Draw();
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -714,13 +744,26 @@ void Renderer::RaymarchLighting()
 	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 	BindShader(marchShader);
 
-	glUniform1i(glGetUniformLocation(combineShader->GetProgram(), "directionTexture"), 0);
+	modelMatrix.ToIdentity();
+	viewMatrix.ToIdentity();
+	projMatrix.ToIdentity();
+	UpdateShaderMatrices();
+
+	glUniform1i(glGetUniformLocation(pointlightShader->GetProgram(), "positionTexture"), 0);
 	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, bufferViewSpacePosTex);
+
+	glUniform1i(glGetUniformLocation(pointlightShader->GetProgram(), "directionTexture"), 1);
+	glActiveTexture(GL_TEXTURE1);
 	glBindTexture(GL_TEXTURE_2D, bufferStochasticNormalTex);
 
 	projMatrix = Matrix4::Perspective(1.0f, 10000.0f, (float)width / (float)height, 45.0f);
 	glUniformMatrix4fv(glGetUniformLocation(marchShader->GetProgram(), "lensProjection"), 1, false, projMatrix.values);
 
+	quad->Draw();
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glEnable(GL_DEPTH_TEST);
 }
 
 void Renderer::DrawToScreen() {
@@ -735,14 +778,23 @@ void Renderer::DrawToScreen() {
 
 	UpdateShaderMatrices();
 
+	glDisable(GL_DEPTH_TEST);
 
+
+
+	
+	glActiveTexture(GL_TEXTURE0);
 
 	glUniform1i(glGetUniformLocation(endshader->GetProgram(), "diffuseTex"), 0);
-	glActiveTexture(GL_TEXTURE0);
-	//glBindTexture(GL_TEXTURE_2D, alphaColourTex);
+
+	glBindTexture(GL_TEXTURE_2D, alphaColourTex);
 
 	//stochastic test
-	glBindTexture(GL_TEXTURE_2D, bufferStochasticNormalTex);
+	//glBindTexture(GL_TEXTURE_2D, bufferStochasticNormalTex);
+
+	//UV test
+	//glBindTexture(GL_TEXTURE_2D, processColourTex);
+	
 	
 	if (twoCameras == false) {
 		quad->Draw();

@@ -56,6 +56,9 @@ void main(void) {
 
 	//// VERSION TWO
 
+
+	/// Raymarch Direction ///
+
 	float rand1 = fract(sin(dot(gl_FragCoord.xy, vec2(12.9898, 78.233))) * 43758.5453);
 	float rand2 = fract(sin(dot(vec2(rand1, 0.0), vec2(12.9898, 78.233))) * 43758.5453);
 	
