@@ -112,6 +112,10 @@ protected:
 	GLuint bufferStochasticNormalTex; // Stochastic normals go here
 	GLuint bufferViewSpacePosTex; // Viewspace position goes here
 
+	// Global illumination UV buffer
+	GLuint UVFBO;			// FBO for UV storage
+	GLuint bufferUVTex;			// UV goes here
+
 	GLuint pointLightFBO; //FBO for our lighting pass
 	GLuint lightDiffuseTex; // Store diffuse lighting
 	GLuint lightSpecularTex; // Store specular lighting

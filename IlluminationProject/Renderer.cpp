@@ -222,6 +222,8 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	glGenFramebuffers(1, &pointLightFBO);
 	glGenFramebuffers(1, &processFBO);
 
+	glGenFramebuffers(1, &UVFBO);
+
 	GLenum buffers[4] = {
 		GL_COLOR_ATTACHMENT0 ,
 		GL_COLOR_ATTACHMENT1 ,
@@ -242,6 +244,8 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	GenerateScreenTexture(bufferViewSpacePosTex);
 	GenerateScreenTexture(lightDiffuseTex);
 	GenerateScreenTexture(lightSpecularTex);
+
+	GenerateScreenTexture(bufferUVTex);
 
 	//First camera alpha FBO
 	glBindFramebuffer(GL_FRAMEBUFFER, alphaFBO);
@@ -281,6 +285,15 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, lightDiffuseTex, 0);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, lightSpecularTex, 0);
 	glDrawBuffers(2, buffers);
+
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+		return;
+	}
+
+	//Preparing UV FBO
+	glBindFramebuffer(GL_FRAMEBUFFER, UVFBO);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, bufferUVTex, 0);
+	glDrawBuffers(1, buffers);
 
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
 		return;
@@ -710,7 +723,7 @@ void Renderer::CombineBuffers() {
 
 	glUniform1i(glGetUniformLocation(combineShader->GetProgram(), "globalLight"), 3);
 	glActiveTexture(GL_TEXTURE3);
-	glBindTexture(GL_TEXTURE_2D, processColourTex);
+	glBindTexture(GL_TEXTURE_2D, bufferUVTex);
 
 	quad->Draw();
 
@@ -739,8 +752,7 @@ void Renderer::DrawAlphaMeshes() {
 
 void Renderer::RaymarchLighting()
 {
-	glBindFramebuffer(GL_FRAMEBUFFER, processFBO);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, processColourTex, 0);
+	glBindFramebuffer(GL_FRAMEBUFFER, UVFBO);
 	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 	BindShader(marchShader);
 
@@ -749,11 +761,13 @@ void Renderer::RaymarchLighting()
 	projMatrix.ToIdentity();
 	UpdateShaderMatrices();
 
-	glUniform1i(glGetUniformLocation(pointlightShader->GetProgram(), "positionTexture"), 0);
+	glDisable(GL_DEPTH_TEST);
+
+	glUniform1i(glGetUniformLocation(marchShader->GetProgram(), "positionTexture"), 0);
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, bufferViewSpacePosTex);
 
-	glUniform1i(glGetUniformLocation(pointlightShader->GetProgram(), "directionTexture"), 1);
+	glUniform1i(glGetUniformLocation(marchShader->GetProgram(), "directionTexture"), 1);
 	glActiveTexture(GL_TEXTURE1);
 	glBindTexture(GL_TEXTURE_2D, bufferStochasticNormalTex);
 
@@ -809,8 +823,8 @@ void Renderer::DrawToScreen() {
 		quad_R->Draw();
 	}
 
-
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glEnable(GL_DEPTH_TEST);
 }
 
 void Renderer::useBlur() {

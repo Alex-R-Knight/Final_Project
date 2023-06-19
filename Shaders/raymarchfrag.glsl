@@ -272,5 +272,7 @@ void main(void) {
 	//uv.b = 1.0;
 	uv.a = 1.0;
 
+	//uv.rgb = texture2D(directionTexture, IN.texCoord.xy).xyz;
+
 	fragColor = uv;
 }
