@@ -33,11 +33,11 @@ float thickness = 0.5;
 void main(void) {
 	
 	// Read texture size
-	vec2 texSize  = textureSize(positionTexture, 0).xy;
+	vec2 texSize  = textureSize(directionTexture, 0).xy;
 	// texcoord generated if it wasnt already there
 	//vec2 texCoord = gl_FragCoord.xy / texSize;
 
-////// UV VEC4 to be used as shader output //////
+////// UV vec4 to be used as shader output //////
 	vec4 uv = vec4(0.0);
 //////
 
@@ -55,7 +55,7 @@ void main(void) {
 	//vec3 normal           = normalize(texture(normalTexture, IN.texCoord).xyz);
 	//vec3 pivot            = normalize(reflect(unitPositionFrom, normal));
 
-	// Unpacks and normalizes the ray firection for global illumination
+	// Unpacks and normalizes the ray direction for global illumination
 	vec3 hemisphereVector = normalize( (texture(directionTexture, IN.texCoord).xyz - 0.5) * 2);
 
 ////// VEC4 to hold the actively read viewspace positions during raymarching ////// 

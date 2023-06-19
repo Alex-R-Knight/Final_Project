@@ -2,7 +2,7 @@
 uniform sampler2D diffuseTex;
 uniform sampler2D diffuseLight;
 uniform sampler2D specularLight;
-uniform sampler2D globalLight;
+uniform sampler2D rayMarchUV;
 
 in Vertex{
 	vec2 texCoord;
@@ -12,10 +12,10 @@ out vec4 fragColour;
 
 void main(void) {
 
-	vec2 texSize	= textureSize(globalLight, 0).xy;
+	vec2 texSize	= textureSize(diffuseTex, 0).xy;
 	vec2 newTexCoord	= gl_FragCoord.xy / texSize;
 
-	vec4 uv			= texture(globalLight,	newTexCoord);
+	vec4 uv			= texture(rayMarchUV,	newTexCoord);
 	vec4 color		= texture(diffuseTex,	uv.xy);
 
 	//float alpha		= clamp(uv.b, 0, 1);

@@ -721,7 +721,7 @@ void Renderer::CombineBuffers() {
 	glActiveTexture(GL_TEXTURE2);
 	glBindTexture(GL_TEXTURE_2D, lightSpecularTex);
 
-	glUniform1i(glGetUniformLocation(combineShader->GetProgram(), "globalLight"), 3);
+	glUniform1i(glGetUniformLocation(combineShader->GetProgram(), "rayMarchUV"), 3);
 	glActiveTexture(GL_TEXTURE3);
 	glBindTexture(GL_TEXTURE_2D, bufferUVTex);
 
@@ -807,7 +807,7 @@ void Renderer::DrawToScreen() {
 	//glBindTexture(GL_TEXTURE_2D, bufferStochasticNormalTex);
 
 	//UV test
-	//glBindTexture(GL_TEXTURE_2D, processColourTex);
+	//glBindTexture(GL_TEXTURE_2D, bufferUVTex);
 	
 	
 	if (twoCameras == false) {
