@@ -323,5 +323,7 @@ float visibility =
 
 	//uv.rgb = texture2D(hemisphereTexture, IN.texCoord.xy).xyz;
 
+	uv.rgb = unitPositionFrom.rgb;
+
 	fragColor = uv;
 }
