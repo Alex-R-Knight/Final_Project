@@ -4,7 +4,8 @@
 // Assorted notes here //
 //
 // dimensions of heightmap size, effectively current boundaries, are 11184 x 11184
-
+//
+// search for phrase "SWITCHHERE" for parts to flip between reflected rays or cosine weighted hemispheres
 
 in Vertex{
 vec2 texCoord;
@@ -16,12 +17,13 @@ out vec4 fragColor;
 uniform mat4 lensProjection;
 
 uniform sampler2D positionTexture;
-uniform sampler2D directionTexture;
+uniform sampler2D hemisphereTexture;
+uniform sampler2D normalTexture;
 
 //// Raymarch Parameters ////
 
-float maxDistance = 15;
-float resolution = 0.3;
+float maxDistance = 25;
+float resolution = 0.5;
 int steps = 10;
 float thickness = 0.5;
 
@@ -33,7 +35,7 @@ float thickness = 0.5;
 void main(void) {
 	
 	// Read texture size
-	vec2 texSize  = textureSize(directionTexture, 0).xy;
+	vec2 texSize  = textureSize(hemisphereTexture, 0).xy;
 	// texcoord generated if it wasnt already there
 	//vec2 texCoord = gl_FragCoord.xy / texSize;
 
@@ -52,11 +54,12 @@ void main(void) {
 
 
 	// For use in screenspace reflection ray directions
-	//vec3 normal           = normalize(texture(normalTexture, IN.texCoord).xyz);
-	//vec3 pivot            = normalize(reflect(unitPositionFrom, normal));
+
+	vec3 normal           = normalize( texture(normalTexture, IN.texCoord).xyz * 2.0 - 1.0 );
+	vec3 pivot            = normalize(reflect(unitPositionFrom, normal));
 
 	// Unpacks and normalizes the ray direction for global illumination
-	vec3 hemisphereVector = normalize( (texture(directionTexture, IN.texCoord).xyz - 0.5) * 2);
+	vec3 hemisphereVector = normalize( (texture(hemisphereTexture, IN.texCoord).xyz - 0.5) * 2);
 
 ////// VEC4 to hold the actively read viewspace positions during raymarching ////// 
 	vec4 positionTo = vec4(0);
@@ -66,7 +69,11 @@ void main(void) {
 	// Start position
 	vec4 startView = vec4(positionFrom.xyz, 1);
 	// End position of start pos plus maxdistance times normalized direction vector
-	vec4 endView   = vec4(positionFrom.xyz + (hemisphereVector * maxDistance), 1);
+	//vec4 endView   = vec4(positionFrom.xyz + (hemisphereVector * maxDistance), 1);
+
+	// reflection based alternate [SWITCHHERE]
+	vec4 endView   = vec4(positionFrom.xyz + (pivot * maxDistance), 1);
+
 ///////
 
 /////// Screen space translation of view space positions ///
@@ -224,7 +231,47 @@ void main(void) {
 
 ////// Visibility calculation //////
 
-	float visibility =
+// Two versions for reflection or hemisphere sample [SWITCHHERE]
+
+//	float visibility =
+//		// Has hit
+//		hit1
+//
+//		// Hit position is readable
+//		* positionTo.w
+//
+//		// Reduces as direction moves to face camera
+//		// using dot product of vector from position to camera, and ray direction vector
+//		* ( 1
+//			- max
+//			( dot(-unitPositionFrom, hemisphereVector),
+//			0
+//			)
+//		)
+//
+//		// Reduces as distance from intersection point increases
+//		* ( 1
+//			- clamp
+//			( depth / thickness,
+//			0,
+//			1
+//			)
+//		)
+//
+//		// Reduces as distance from ray start point increases
+//		* ( 1
+//			- clamp
+//			(   length(positionTo - positionFrom) / maxDistance,          
+//			0,
+//			1
+//			)
+//		)
+//
+//		// Removes is hit is beyond frustum area
+//		* (uv.x < 0 || uv.x > 1 ? 0 : 1)
+//		* (uv.y < 0 || uv.y > 1 ? 0 : 1);
+
+float visibility =
 		// Has hit
 		hit1
 
@@ -235,7 +282,7 @@ void main(void) {
 		// using dot product of vector from position to camera, and ray direction vector
 		* ( 1
 			- max
-			( dot(-unitPositionFrom, hemisphereVector),
+			( dot(-unitPositionFrom, pivot),
 			0
 			)
 		)
@@ -272,7 +319,9 @@ void main(void) {
 	//uv.b = 1.0;
 	uv.a = 1.0;
 
-	//uv.rgb = texture2D(directionTexture, IN.texCoord.xy).xyz;
+	//uv.rgb = pivot.xyz * 0.5 + 0.5;
+
+	//uv.rgb = texture2D(hemisphereTexture, IN.texCoord.xy).xyz;
 
 	fragColor = uv;
 }

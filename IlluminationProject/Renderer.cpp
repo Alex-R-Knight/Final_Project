@@ -241,11 +241,13 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	GenerateScreenTexture(bufferColourTex);
 	GenerateScreenTexture(bufferNormalTex);
 	GenerateScreenTexture(bufferStochasticNormalTex);
-	GenerateScreenTexture(bufferViewSpacePosTex);
+	//GenerateScreenTexture(bufferViewSpacePosTex);
 	GenerateScreenTexture(lightDiffuseTex);
 	GenerateScreenTexture(lightSpecularTex);
 
 	GenerateScreenTexture(bufferUVTex);
+
+	GeneratePositionTexture(bufferViewSpacePosTex);
 
 	//First camera alpha FBO
 	glBindFramebuffer(GL_FRAMEBUFFER, alphaFBO);
@@ -369,6 +371,21 @@ void Renderer::GenerateScreenTexture(GLuint& into, bool depth) {
 	GLuint type = depth ? GL_DEPTH_COMPONENT : GL_RGBA;
 
 	glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, type, GL_UNSIGNED_BYTE, NULL);
+
+	glBindTexture(GL_TEXTURE_2D, 0);
+}
+
+void Renderer::GeneratePositionTexture(GLuint& into)
+{
+	glGenTextures(1, &into);
+	glBindTexture(GL_TEXTURE_2D, into);
+
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width, height, 0, GL_RGBA, GL_FLOAT, NULL);
 
 	glBindTexture(GL_TEXTURE_2D, 0);
 }
@@ -767,9 +784,13 @@ void Renderer::RaymarchLighting()
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, bufferViewSpacePosTex);
 
-	glUniform1i(glGetUniformLocation(marchShader->GetProgram(), "directionTexture"), 1);
+	glUniform1i(glGetUniformLocation(marchShader->GetProgram(), "hemisphereTexture"), 1);
 	glActiveTexture(GL_TEXTURE1);
 	glBindTexture(GL_TEXTURE_2D, bufferStochasticNormalTex);
+
+	glUniform1i(glGetUniformLocation(marchShader->GetProgram(), "normalTexture"), 2);
+	glActiveTexture(GL_TEXTURE2);
+	glBindTexture(GL_TEXTURE_2D, bufferNormalTex);
 
 	projMatrix = Matrix4::Perspective(1.0f, 10000.0f, (float)width / (float)height, 45.0f);
 	glUniformMatrix4fv(glGetUniformLocation(marchShader->GetProgram(), "lensProjection"), 1, false, projMatrix.values);
@@ -801,13 +822,16 @@ void Renderer::DrawToScreen() {
 
 	glUniform1i(glGetUniformLocation(endshader->GetProgram(), "diffuseTex"), 0);
 
-	glBindTexture(GL_TEXTURE_2D, alphaColourTex);
+	//glBindTexture(GL_TEXTURE_2D, alphaColourTex);
 
 	//stochastic test
 	//glBindTexture(GL_TEXTURE_2D, bufferStochasticNormalTex);
 
 	//UV test
-	//glBindTexture(GL_TEXTURE_2D, bufferUVTex);
+	glBindTexture(GL_TEXTURE_2D, bufferUVTex);
+
+	//Normal test
+	//glBindTexture(GL_TEXTURE_2D, bufferNormalTex);
 	
 	
 	if (twoCameras == false) {

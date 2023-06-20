@@ -42,3 +42,5 @@ void main(void) {
 	
 	gl_Position = (projMatrix * viewMatrix) * worldPos;
 }
+
+//32bit RGBA

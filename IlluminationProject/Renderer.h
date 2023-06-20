@@ -74,6 +74,8 @@ protected:
 
 	void GenerateScreenTexture(GLuint& into, bool depth = false); //Make a new texture ...
 
+	void GeneratePositionTexture(GLuint& into); //Make a new texture ... to hold viewspace position
+
 	Shader* heightShader; //To process heightmap with multiple textures
 	Shader* sceneShader; // Shader to fill our GBuffers
 	Shader* pointlightShader; // Shader to calculate lighting

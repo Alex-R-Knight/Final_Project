@@ -15,16 +15,14 @@ void main(void) {
 	vec2 texSize	= textureSize(diffuseTex, 0).xy;
 	vec2 newTexCoord	= gl_FragCoord.xy / texSize;
 
-	vec4 uv			= texture(rayMarchUV,	newTexCoord);
+	vec4 uv			= texture(rayMarchUV,	IN.texCoord);
 	vec4 color		= texture(diffuseTex,	uv.xy);
 
 	//float alpha		= clamp(uv.b, 0, 1);
 	//
 	//fragColour		= vec4(mix(vec3(0), color.rgb, alpha), alpha);
 
-	//fragColour = color;
-
-	fragColour = uv;
+	fragColour = ( uv.b != 0 ? color : vec4(0) );
 }
 
 
