@@ -22,15 +22,17 @@ void main(void) {
 	//
 	//fragColour		= vec4(mix(vec3(0), color.rgb, alpha), alpha);
 
-	//fragColour = texture(diffuseTex,	IN.texCoord);
+	
 
-	//if (uv.b == 1.0f) {
-	//	fragColour = color;
-	//}
+	if (uv.b == 1.0f) {
+		fragColour = color;
+	}
 
 	//fragColour = (uv.b != 0.0) ? color : vec4(0.0f, 0.0f, 0.0f, 0.0f);
 
-	fragColour = color;
+	//fragColour = color;
+
+	//fragColour = texture(diffuseTex,	IN.texCoord);
 }
 
 

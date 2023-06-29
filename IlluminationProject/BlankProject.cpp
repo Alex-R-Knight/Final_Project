@@ -57,14 +57,14 @@ int main() {
 			renderer.firstCameraBuffer();
 			renderer.RenderScene();
 
-			if (choosePost == 1) {
-				renderer.useBlur();
-				renderer.drawPostProcess();
-			}
-			if (choosePost == 2) {
-				renderer.useSobel();
-				renderer.drawPostProcess();
-			}
+			//if (choosePost == 1) {
+			//	renderer.useBlur();
+			//	renderer.drawPostProcess();
+			//}
+			//if (choosePost == 2) {
+			//	renderer.useSobel();
+			//	renderer.drawPostProcess();
+			//}
 
 			renderer.DrawToScreen();
 

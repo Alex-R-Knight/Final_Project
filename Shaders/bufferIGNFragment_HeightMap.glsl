@@ -75,5 +75,5 @@ void main(void) {
 
 	//// Viewspace Pos ////
 
-	fragColour[3] = vec4(IN.viewSpacePos.xyz, 1.0);
+	//fragColour[3] = vec4(IN.viewSpacePos.xyz, 1.0);
 }

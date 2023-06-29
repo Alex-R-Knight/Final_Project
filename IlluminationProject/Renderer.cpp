@@ -41,11 +41,11 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 		TEXTUREDIR"stubdot3.tga", SOIL_LOAD_AUTO,
 		SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
 
-	cubeMap = SOIL_load_OGL_cubemap(
-		TEXTUREDIR"nightsky2_left.png", TEXTUREDIR"nightsky2_right.png",
-		TEXTUREDIR"nightsky2_up.png", TEXTUREDIR"nightsky2_down.png",
-		TEXTUREDIR"nightsky2_front.png", TEXTUREDIR"nightsky2_back.png",
-		SOIL_LOAD_RGB, SOIL_CREATE_NEW_ID, 0);
+	//cubeMap = SOIL_load_OGL_cubemap(
+	//	TEXTUREDIR"nightsky2_left.png", TEXTUREDIR"nightsky2_right.png",
+	//	TEXTUREDIR"nightsky2_up.png", TEXTUREDIR"nightsky2_down.png",
+	//	TEXTUREDIR"nightsky2_front.png", TEXTUREDIR"nightsky2_back.png",
+	//	SOIL_LOAD_RGB, SOIL_CREATE_NEW_ID, 0);
 
 	glassTex = SOIL_load_OGL_texture(
 		TEXTUREDIR"stainedglasstreetex.png", SOIL_LOAD_AUTO,
@@ -197,40 +197,21 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	//
 	//root->AddChild(statue);
 
-	// Testing Cubes
-	//SceneNode* testCube = new SceneNode();
-	//testCube->SetTransform(Matrix4::Translation(Vector3(5.0f, 0.0f, 0.0f)));
-	//testCube->SetColour(Vector4(1.0f, 1.0f, 1.0f, 1.0f));
-	//testCube->SetModelScale(Vector3(1.0f, 1.0f, 1.0f));
-	//testCube->SetBoundingRadius(2000.0f);
-	//testCube->SetMesh(Mesh::LoadFromMeshFile("Cube.msh"));
-	//testCube->SetTexture(earthTex);
-	//
-	//root->AddChild(testCube);
-	//
-	//SceneNode* testCube2 = new SceneNode();
-	//testCube2->SetTransform(Matrix4::Translation(Vector3(6.0f, 1.0f, 0.0f)));
-	//testCube2->SetColour(Vector4(1.0f, 1.0f, 1.0f, 1.0f));
-	//testCube2->SetModelScale(Vector3(1.0f, 1.0f, 1.0f));
-	//testCube2->SetBoundingRadius(2000.0f);
-	//testCube2->SetMesh(Mesh::LoadFromMeshFile("Cube.msh"));
-	//testCube2->SetTexture(earthTex);
-	//
-	//root->AddChild(testCube2);
-	//
-	//SceneNode* testCube3 = new SceneNode();
-	//testCube3->SetTransform(Matrix4::Translation(Vector3(6.0f, 1.0f, 2.0f)));
-	//testCube3->SetColour(Vector4(1.0f, 1.0f, 1.0f, 1.0f));
-	//testCube3->SetModelScale(Vector3(1.0f, 1.0f, 1.0f));
-	//testCube3->SetBoundingRadius(2000.0f);
-	//testCube3->SetMesh(Mesh::LoadFromMeshFile("Cube.msh"));
-	//testCube3->SetTexture(grassTex);
-	//
-	//root->AddChild(testCube3);
+	
+	// Testing cubes
 
+	SceneNode* testFloor = new SceneNode();
+	testFloor->SetTransform(Matrix4::Translation(Vector3(0.0f, -2.5f, 0.0f)));
+	testFloor->SetColour(Vector4(1.0f, 1.0f, 1.0f, 1.0f));
+	testFloor->SetModelScale(Vector3(100.0f, 1.0f, 100.0f));
+	testFloor->SetBoundingRadius(2000.0f);
+	testFloor->SetMesh(Mesh::LoadFromMeshFile("Cube.msh"));
+	testFloor->SetTexture(earthTex);
+
+	root->AddChild(testFloor);
 
 	SceneNode* testCube = new SceneNode();
-	testCube->SetTransform(Matrix4::Translation(Vector3(0.0f, 0.0f, -20.0f)));
+	testCube->SetTransform(Matrix4::Translation(Vector3(0.0f, 0.0f, -25.0f)));
 	testCube->SetColour(Vector4(1.0f, 1.0f, 1.0f, 1.0f));
 	testCube->SetModelScale(Vector3(5.0f, 5.0f, 5.0f));
 	testCube->SetBoundingRadius(2000.0f);
@@ -240,7 +221,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	root->AddChild(testCube);
 	
 	SceneNode* testCube2 = new SceneNode();
-	testCube2->SetTransform(Matrix4::Translation(Vector3(0.0f, 5.0f, -25.0f)));
+	testCube2->SetTransform(Matrix4::Translation(Vector3(0.0f, 5.0f, -30.0f)));
 	testCube2->SetColour(Vector4(1.0f, 1.0f, 1.0f, 1.0f));
 	testCube2->SetModelScale(Vector3(5.0f, 5.0f, 5.0f));
 	testCube2->SetBoundingRadius(2000.0f);
@@ -250,7 +231,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	root->AddChild(testCube2);
 	
 	SceneNode* testCube3 = new SceneNode();
-	testCube3->SetTransform(Matrix4::Translation(Vector3(5.0f, 5.0f, -25.0f)));
+	testCube3->SetTransform(Matrix4::Translation(Vector3(5.0f, 5.0f, -30.0f)));
 	testCube3->SetColour(Vector4(1.0f, 1.0f, 1.0f, 1.0f));
 	testCube3->SetModelScale(Vector3(5.0f, 5.0f, 5.0f));
 	testCube3->SetBoundingRadius(2000.0f);
@@ -337,9 +318,8 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, bufferColourTex, 0);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, bufferNormalTex, 0);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, bufferStochasticNormalTex, 0);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT3, GL_TEXTURE_2D, bufferViewSpacePosTex, 0);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, bufferDepthTex, 0);
-	glDrawBuffers(4, buffers);
+	glDrawBuffers(3, buffers);
 
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
 		return;
@@ -358,7 +338,8 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	//Preparing UV FBO
 	glBindFramebuffer(GL_FRAMEBUFFER, UVFBO);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, bufferUVTex, 0);
-	glDrawBuffers(1, buffers);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, bufferViewSpacePosTex, 0);
+	glDrawBuffers(2, buffers);
 
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
 		return;
@@ -694,7 +675,7 @@ void Renderer::FillBuffers() {
 	glBindFramebuffer(GL_FRAMEBUFFER, bufferFBO);
 	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 	//
-	DrawSkybox();
+	//DrawSkybox();
 
 	//BindShader(heightShader);
 	//glUniform1i(glGetUniformLocation(heightShader->GetProgram(), "diffuseTex"), 0);
@@ -714,11 +695,11 @@ void Renderer::FillBuffers() {
 	//glActiveTexture(GL_TEXTURE3);
 	//glBindTexture(GL_TEXTURE_2D, earthBump);
 	//
-	//modelMatrix.ToIdentity();
-	//viewMatrix = activeCamera->BuildViewMatrix();
-	//projMatrix = Matrix4::Perspective(1.0f, 10000.0f, (float)width / (float)height, 45.0f);
-	//
-	//UpdateShaderMatrices();
+	modelMatrix.ToIdentity();
+	viewMatrix = activeCamera->BuildViewMatrix();
+	projMatrix = Matrix4::Perspective(1.0f, 10000.0f, (float)width / (float)height, 45.0f);
+	
+	UpdateShaderMatrices();
 	//
 	//heightMap->Draw();
 	//
@@ -833,12 +814,13 @@ void Renderer::DrawAlphaMeshes() {
 void Renderer::RaymarchLighting()
 {
 	glBindFramebuffer(GL_FRAMEBUFFER, UVFBO);
-	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+	glClear(GL_COLOR_BUFFER_BIT);
 	BindShader(marchShader);
 
 	modelMatrix.ToIdentity();
 	viewMatrix.ToIdentity();
 	projMatrix.ToIdentity();
+
 	UpdateShaderMatrices();
 
 	glDisable(GL_DEPTH_TEST);
@@ -859,13 +841,14 @@ void Renderer::RaymarchLighting()
 	glActiveTexture(GL_TEXTURE2);
 	glBindTexture(GL_TEXTURE_2D, bufferNormalTex);
 
-	projMatrix = Matrix4::Perspective(1.0f, 10000.0f, (float)width / (float)height, 45.0f);
-	glUniformMatrix4fv(glGetUniformLocation(marchShader->GetProgram(), "lensProjection"), 1, false, projMatrix.values);
+	Matrix4 tempProjMatrix = Matrix4::Perspective(1.0f, 10000.0f, (float)width / (float)height, 45.0f);
+	glUniformMatrix4fv(glGetUniformLocation(marchShader->GetProgram(), "lensProjection"), 1, false, tempProjMatrix.values);
 
-	Matrix4 invProj = projMatrix.Inverse();
+	Matrix4 invProj = tempProjMatrix.Inverse();
 	glUniformMatrix4fv(glGetUniformLocation(marchShader->GetProgram(), "inverseProjection"), 1, false, invProj.values);
 
-	glUniformMatrix4fv(glGetUniformLocation(marchShader->GetProgram(), "viewMatrix"), 1, false, activeCamera->BuildViewMatrix().values);
+	Matrix4 tempViewMatrix = activeCamera->BuildViewMatrix();
+	glUniformMatrix4fv(glGetUniformLocation(marchShader->GetProgram(), "NormalViewMatrix"), 1, false, tempViewMatrix.values);
 
 	
 

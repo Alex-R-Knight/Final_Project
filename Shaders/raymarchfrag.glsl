@@ -11,12 +11,15 @@ in Vertex{
 vec2 texCoord;
 } IN;
 
-out vec4 fragColor;
+//out vec4 fragColor;
+
+out vec4 uvOutput;
+out vec4 debugOutput;
 
 
 uniform mat4 lensProjection;
 uniform mat4 inverseProjection;
-uniform mat4 viewMatrix;
+uniform mat4 NormalViewMatrix;
 
 uniform vec2 pixelSize; // reciprocal of resolution
 
@@ -28,10 +31,10 @@ uniform sampler2D normalTexture;
 
 //// Raymarch Parameters ////
 
-float maxDistance = 30;
-float resolution = 0.75;
+float maxDistance = 100;
+float resolution = 0.5;
 int steps = 20;
-float thickness = 0.25;
+float thickness = 0.5;
 
 /////////////////////////////
 
@@ -40,8 +43,13 @@ vec4 viewSpacePosFromDepth(vec2 inCoord) {
 	
 	float depth = texture(depthTex, inCoord).r;
 
-	vec3 ndcPos = vec3(inCoord, depth) * 2.0 - 1.0;
+	// NDC position, X and Y mapped to -1 to 1 range along with Z
+	vec3 ndcPos = vec3(inCoord.x, inCoord.y, depth) * 2.0 - 1.0;
+
+	// Multiply by inverse projection matrix, expand to vec4 to do so
 	vec4 invClipPos = inverseProjection * vec4(ndcPos, 1.0);
+
+	// Divide by W value, perspective division process
 	vec3 viewPos = invClipPos.xyz / invClipPos.w;
 
 	vec4 returnVec = (depth >= 1.0) ? vec4(viewPos.xyz, 0.0f) : vec4(viewPos.xyz, 1.0);
@@ -49,24 +57,32 @@ vec4 viewSpacePosFromDepth(vec2 inCoord) {
 	return returnVec;
 }
 
+// Test numbers
+// UV coord 0.75, 0.25, 0.90711
+
+// NDC step
+// 0.5, -0.5, 0.81422
+
+// inverse projection
+// 
+
+
+
+
 void main(void) {
-	
-	// Read texture size
-	vec2 texSize  = textureSize(hemisphereTexture, 0).xy;
-	// texcoord generated if it wasnt already there
-	//vec2 texCoord = gl_FragCoord.xy / texSize;
 
 ////// UV vec4 to be used as shader output //////
 	vec4 uv = vec4(0.0f, 0.0f, 0.0f, 0.0f);
 //////
-
+	vec2 texSize  = textureSize(hemisphereTexture, 0).xy;
 
 	vec2 newTexCoord = vec2(gl_FragCoord.xy * pixelSize);
 	// Viewspace position of current fragment
-	vec4 positionFrom     = viewSpacePosFromDepth(newTexCoord.xy);
+	vec4 positionFrom     = viewSpacePosFromDepth(IN.texCoord);
 
 	// Terminate if invalid
-	if ( positionFrom.w <= 0.0 ) { fragColor = vec4(0.0f, 0.0f, 0.0f, 0.0f); return; }
+	//if ( positionFrom.w <= 0.0 ) { fragColor = vec4(0.0f, 0.0f, 0.0f, 0.0f); return; }
+	if ( positionFrom.w <= 0.0 ) { uvOutput = vec4(0.0f, 0.0f, 0.0f, 0.0f); return; }
 
 	// Produces normalized vector of viewspace position
 	vec3 unitPositionFrom = normalize(positionFrom.xyz);
@@ -74,15 +90,16 @@ void main(void) {
 
 	// For use in screenspace reflection ray directions
 
-	vec3 normal           = normalize( texture(normalTexture, IN.texCoord).xyz * 2.0 - 1.0 );
-
+	// Retrieve world space normal
+	vec3 normal			= normalize( texture(normalTexture, newTexCoord.xy).xyz * 2.0 - 1.0 );
 	// World space normal to view space
-	normal = transpose(inverse(mat3(viewMatrix))) * normal;
+	normal				= mat3(NormalViewMatrix) * normal;
 
-	vec3 pivot            = normalize(reflect(unitPositionFrom, normal));
+	// Reflect normalised view space position via view space normal
+	vec3 pivot			= normalize(reflect(unitPositionFrom, normal));
 
 	// Unpacks and normalizes the ray direction for global illumination
-	vec3 hemisphereVector = normalize( (texture(hemisphereTexture, IN.texCoord).xyz - 0.5) * 2);
+	vec3 hemisphereVector = normalize( (texture(hemisphereTexture, newTexCoord.xy).xyz - 0.5) * 2);
 
 ////// VEC4 to hold the actively read viewspace positions during raymarching ////// 
 	vec4 positionTo = vec4(0);
@@ -96,9 +113,13 @@ void main(void) {
 	//vec4 endView   = vec4(positionFrom.xyz + (hemisphereVector * maxDistance), 1);
 
 	// reflection based alternate [SWITCHHERE]
-	vec4 endView   = vec4(positionFrom.xyz + (pivot * maxDistance), 1);
+	vec4 endView   = vec4(positionFrom.xyz + (maxDistance * pivot), 1);
 
 ///////
+
+////// Debug storage
+	vec4 debugValue = positionFrom;
+//////
 
 /////// Screen space translation of view space positions ///
 
@@ -115,7 +136,7 @@ void main(void) {
 	startFrag.xy	= startFrag.xy * 0.5 + 0.5;
 
 	// UV coordinates to fragment coordinates
-	startFrag.xy	*= texSize;
+	startFrag.xy	/= pixelSize;
 
 	//End position
 	vec4 endFrag	= endView;
@@ -130,7 +151,7 @@ void main(void) {
 	endFrag.xy		= endFrag.xy * 0.5 + 0.5;
 
 	// UV coordinates to fragment coordinates
-	endFrag.xy		*= texSize;
+	endFrag.xy		/= pixelSize;
 
 ///////
 
@@ -140,7 +161,7 @@ void main(void) {
 	vec2 frag  = startFrag.xy;
     
 	// Divide fragment coordinates by texture size for UV coordinates
-	uv.xy = frag / texSize;
+	uv.xy = frag *= pixelSize;
 
 	//X and Y delta values of the march across fragments
 	float deltaX    = endFrag.x - startFrag.x;
@@ -175,26 +196,34 @@ void main(void) {
 	// Depth stores the distance difference between the ray point and the scene position from the position buffer
 	float depth        = 0.0f;
 
+////// Clamp value to prevent anomalous high delta
+	float clampVal = (useX == 1.0f) ? texSize.x : texSize.y;
+//////
 
 ////// First pass //////
-	for (float i = 0; i < int(delta); ++i) {
+	//for (float i = 0; i <= clamp(delta, 0.0f, clampVal); ++i) {
+	for (float i = 0; i < 1; ++i) {
 
 		// Frag is incremented by the per-step increment value
 		frag		+= increment;
 
 		// Divide fragment coordinates by texture size for UV coordinates
-		uv.xy		= frag / texSize;
+		uv.xy		= frag * pixelSize;
 
 		// Reads the position info of the calculated UV coordinates
 		positionTo	= viewSpacePosFromDepth(uv.xy);
 
-		// Determines distance along the line, using the X or Y based on the useX determined above. Then clamp to 0-1 range.
+		//Determines distance along the line, using the X or Y based on the useX determined above. Then clamp to 0-1 range.
 		search1 = mix(
 			(frag.y - startFrag.y) / deltaY,
 			(frag.x - startFrag.x) / deltaX,
 			useX
         );
 		search1 = clamp(search1, 0.0, 1.0);
+
+		search1 = abs(frag.y - startFrag.y) / abs(deltaY);
+		search1 = clamp(search1, 0.0, 1.0);
+
 
 		// use search1 to interpolate (perspective-correctly) the viewspace position
 		viewDistance = (startView.z * endView.z) / mix(endView.z, startView.z, search1);
@@ -203,7 +232,8 @@ void main(void) {
 		depth        = viewDistance - positionTo.z;
 
 		// if an intersection is detected, hit0 is set to 1, and the first pass ends.
-		if (depth > 0 && depth < thickness) {
+		//if (depth > 0 && depth < thickness) {
+		if ( abs(depth) < thickness ) {
 		  hit0 = 1;
 		  break;
 		}
@@ -221,35 +251,35 @@ void main(void) {
 	steps *= hit0;
 
 ////// Second pass
-	for (float i = 0; i < steps; ++i) {
-
-		// frag is set to the current search1 record of distance along the ray
-		frag	= mix(startFrag.xy, endFrag.xy, search1);
-
-		// the UV coordinates are generated as before from fragment coordinates and texture size
-		uv.xy	= frag / texSize;
-
-		// The position info of these UV coordinates are sampled
-		positionTo = viewSpacePosFromDepth(uv.xy);
-
-		// use search1 to interpolate (perspective-correctly) the viewspace position
-		viewDistance	= (startView.z * endView.z) / mix(endView.z, startView.z, search1);
-
-		// Calculate depth by comparing the ray and the fragment depths
-		depth        = viewDistance - positionTo.z;
-
-		// if an intersection is found, hit1 is set to 1, search1 is set to halfway between last known miss (search0) and the current hit
-		if (depth > 0 && depth < thickness) {
-			hit1 = 1;
-			search1 = search0 + ((search1 - search0) / 2);
-		}
-		// If no intersection is found, search0 is set to the current miss position, search1 is set to halfway between the the last known hit, and the current miss
-		else {
-			float temp = search1;
-			search1 = search1 + ((search1 - search0) / 2);
-			search0 = temp;
-		}
-	}
+	//for (float i = 0; i < steps; ++i) {
+	//
+	//	// frag is set to the current search1 record of distance along the ray
+	//	frag	= mix(startFrag.xy, endFrag.xy, search1);
+	//
+	//	// the UV coordinates are generated as before from fragment coordinates and texture size
+	//	uv.xy	= frag * pixelSize;
+	//
+	//	// The position info of these UV coordinates are sampled
+	//	positionTo = viewSpacePosFromDepth(uv.xy);
+	//
+	//	// use search1 to interpolate (perspective-correctly) the viewspace position
+	//	viewDistance	= (startView.z * endView.z) / mix(endView.z, startView.z, search1);
+	//
+	//	// Calculate depth by comparing the ray and the fragment depths
+	//	depth        = viewDistance - positionTo.z;
+	//
+	//	// if an intersection is found, hit1 is set to 1, search1 is set to halfway between last known miss (search0) and the current hit
+	//	if (depth > 0 && depth < thickness) {
+	//		hit1 = 1;
+	//		search1 = search0 + ((search1 - search0) / 2);
+	//	}
+	//	// If no intersection is found, search0 is set to the current miss position, search1 is set to halfway between the the last known hit, and the current miss
+	//	else {
+	//		float temp = search1;
+	//		search1 = search1 + ((search1 - search0) / 2);
+	//		search0 = temp;
+	//	}
+	//}
 //////
 
 
@@ -349,7 +379,16 @@ float visibility =
 
 	//uv.rgb = unitPositionFrom.rgb;
 
-	uv.b = (hit1 == 1.0) ? 1.0f : 0.0f;
-	//uv.b = 0.0f;
-	fragColor = uv;
+	//uv.b = (hit1 == 1.0) ? 1.0f : 0.0f;
+	uv.b = 1.0f;
+	//fragColor = uv;
+
+	uvOutput = uv;
+
+	debugOutput = debugValue;
 }
+
+// depth buffer seems right
+//sampled with UV coords
+// are UV coordinates right first time around
+// 32bit float, renderdoc, capture frames
