@@ -71,7 +71,8 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	//std::cout << "Y = " << heightmapSize.y << "\n";
 	//std::cout << "Z = " << heightmapSize.z << "\n";
 
-	camera = new Camera(10.0f, 0.0f, heightmapSize * Vector3(0.5f, 1.0f, 0.9f));
+	//camera = new Camera(10.0f, 0.0f, heightmapSize * Vector3(0.5f, 1.0f, 0.9f));
+	camera = new Camera(0.0f, 0.0f, Vector3(0.0f, 0.0f, 0.0f));
 
 	startPos = heightmapSize * Vector3(0.5f, 1.0f, 0.9f);
 
@@ -146,20 +147,20 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 		matTextures.emplace_back(texID);
 	}
 
-	for (int i = 0; i < 100; i++) {
-		SceneNode* treenode = new SceneNode();
-		treenode->SetColour(Vector4(1.0f, 1.0f, 1.0f, 1.0f));
-		treenode->SetTransform(Matrix4::Translation(Vector3((rand() % (int)(0.7 * heightmapSize.x)) + (0.15 * heightmapSize.x), 50.0f, (rand() % (int)(0.7 * heightmapSize.z)) + (0.15 * heightmapSize.z))));
-		treenode->SetModelScale(Vector3(25.0f, 35.0f, 25.0f));
-		treenode->SetBoundingRadius(1000.0f);
-		treenode->SetMesh(tree);
-
-		for (int i = 0; i < tree->GetSubMeshCount(); ++i) {
-			treenode->SetTexture(matTextures[i]);
-		}
-
-		root->AddChild(treenode);
-	}
+	//for (int i = 0; i < 100; i++) {
+	//	SceneNode* treenode = new SceneNode();
+	//	treenode->SetColour(Vector4(1.0f, 1.0f, 1.0f, 1.0f));
+	//	treenode->SetTransform(Matrix4::Translation(Vector3((rand() % (int)(0.7 * heightmapSize.x)) + (0.15 * heightmapSize.x), 50.0f, (rand() % (int)(0.7 * heightmapSize.z)) + (0.15 * heightmapSize.z))));
+	//	treenode->SetModelScale(Vector3(25.0f, 35.0f, 25.0f));
+	//	treenode->SetBoundingRadius(1000.0f);
+	//	treenode->SetMesh(tree);
+	//
+	//	for (int i = 0; i < tree->GetSubMeshCount(); ++i) {
+	//		treenode->SetTexture(matTextures[i]);
+	//	}
+	//
+	//	root->AddChild(treenode);
+	//}
 
 	for (int i = 0; i < LIGHT_NUM; i++) {
 		Vector3 newlocation = Vector3((rand() % (int)(0.7 * heightmapSize.x)) + (0.15 * heightmapSize.x), 0.0f, (rand() % (int)(0.7 * heightmapSize.z)) + (0.15 * heightmapSize.z));
@@ -171,50 +172,112 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 		l.SetRadius(1500.0f + (rand() % 300));
 
 
-		SceneNode* treepos = new SceneNode();
-		treepos->SetTransform(Matrix4::Translation(newlocation));
-
-		SceneNode* treenode = new SceneNode();
-		treenode->SetColour(Vector4(1.0f, 1.0f, 1.0f, 0.9f));
-		treenode->SetModelScale(Vector3(40.0f, 55.0f, 40.0f));
-		treenode->SetBoundingRadius(1000.0f);
-		treenode->SetMesh(tree);
-		treenode->SetTexture(glassTex);
-
-		treepos->AddChild(treenode);
-
-		root->AddChild(treepos);
+		//SceneNode* treepos = new SceneNode();
+		//treepos->SetTransform(Matrix4::Translation(newlocation));
+		//
+		//SceneNode* treenode = new SceneNode();
+		//treenode->SetColour(Vector4(1.0f, 1.0f, 1.0f, 0.9f));
+		//treenode->SetModelScale(Vector3(40.0f, 55.0f, 40.0f));
+		//treenode->SetBoundingRadius(1000.0f);
+		//treenode->SetMesh(tree);
+		//treenode->SetTexture(glassTex);
+		//
+		//treepos->AddChild(treenode);
+		//
+		//root->AddChild(treepos);
 	}
 
-	SceneNode* statue = new SceneNode();
-	statue->SetTransform(Matrix4::Translation(Vector3(0.5 * heightmapSize.x, 50.0f, 0.5 * heightmapSize.z)));
-	statue->SetColour(Vector4(1.0f, 1.0f, 1.0f, 1.0f));
-	statue->SetModelScale(Vector3(1000.0f, 1000.0f, 1000.0f));
-	statue->SetBoundingRadius(2000.0f);
-	statue->SetMesh(Mesh::LoadFromMeshFile("Role_T.msh"));
-	statue->SetTexture(earthTex);
+	//SceneNode* statue = new SceneNode();
+	//statue->SetTransform(Matrix4::Translation(Vector3(0.5 * heightmapSize.x, 50.0f, 0.5 * heightmapSize.z)));
+	//statue->SetColour(Vector4(1.0f, 1.0f, 1.0f, 1.0f));
+	//statue->SetModelScale(Vector3(1000.0f, 1000.0f, 1000.0f));
+	//statue->SetBoundingRadius(2000.0f);
+	//statue->SetMesh(Mesh::LoadFromMeshFile("Role_T.msh"));
+	//statue->SetTexture(earthTex);
+	//
+	//root->AddChild(statue);
 
-	root->AddChild(statue);
+	// Testing Cubes
+	//SceneNode* testCube = new SceneNode();
+	//testCube->SetTransform(Matrix4::Translation(Vector3(5.0f, 0.0f, 0.0f)));
+	//testCube->SetColour(Vector4(1.0f, 1.0f, 1.0f, 1.0f));
+	//testCube->SetModelScale(Vector3(1.0f, 1.0f, 1.0f));
+	//testCube->SetBoundingRadius(2000.0f);
+	//testCube->SetMesh(Mesh::LoadFromMeshFile("Cube.msh"));
+	//testCube->SetTexture(earthTex);
+	//
+	//root->AddChild(testCube);
+	//
+	//SceneNode* testCube2 = new SceneNode();
+	//testCube2->SetTransform(Matrix4::Translation(Vector3(6.0f, 1.0f, 0.0f)));
+	//testCube2->SetColour(Vector4(1.0f, 1.0f, 1.0f, 1.0f));
+	//testCube2->SetModelScale(Vector3(1.0f, 1.0f, 1.0f));
+	//testCube2->SetBoundingRadius(2000.0f);
+	//testCube2->SetMesh(Mesh::LoadFromMeshFile("Cube.msh"));
+	//testCube2->SetTexture(earthTex);
+	//
+	//root->AddChild(testCube2);
+	//
+	//SceneNode* testCube3 = new SceneNode();
+	//testCube3->SetTransform(Matrix4::Translation(Vector3(6.0f, 1.0f, 2.0f)));
+	//testCube3->SetColour(Vector4(1.0f, 1.0f, 1.0f, 1.0f));
+	//testCube3->SetModelScale(Vector3(1.0f, 1.0f, 1.0f));
+	//testCube3->SetBoundingRadius(2000.0f);
+	//testCube3->SetMesh(Mesh::LoadFromMeshFile("Cube.msh"));
+	//testCube3->SetTexture(grassTex);
+	//
+	//root->AddChild(testCube3);
+
+
+	SceneNode* testCube = new SceneNode();
+	testCube->SetTransform(Matrix4::Translation(Vector3(0.0f, 0.0f, -20.0f)));
+	testCube->SetColour(Vector4(1.0f, 1.0f, 1.0f, 1.0f));
+	testCube->SetModelScale(Vector3(5.0f, 5.0f, 5.0f));
+	testCube->SetBoundingRadius(2000.0f);
+	testCube->SetMesh(Mesh::LoadFromMeshFile("Cube.msh"));
+	testCube->SetTexture(earthTex);
+	
+	root->AddChild(testCube);
+	
+	SceneNode* testCube2 = new SceneNode();
+	testCube2->SetTransform(Matrix4::Translation(Vector3(0.0f, 5.0f, -25.0f)));
+	testCube2->SetColour(Vector4(1.0f, 1.0f, 1.0f, 1.0f));
+	testCube2->SetModelScale(Vector3(5.0f, 5.0f, 5.0f));
+	testCube2->SetBoundingRadius(2000.0f);
+	testCube2->SetMesh(Mesh::LoadFromMeshFile("Cube.msh"));
+	testCube2->SetTexture(earthTex);
+	
+	root->AddChild(testCube2);
+	
+	SceneNode* testCube3 = new SceneNode();
+	testCube3->SetTransform(Matrix4::Translation(Vector3(5.0f, 5.0f, -25.0f)));
+	testCube3->SetColour(Vector4(1.0f, 1.0f, 1.0f, 1.0f));
+	testCube3->SetModelScale(Vector3(5.0f, 5.0f, 5.0f));
+	testCube3->SetBoundingRadius(2000.0f);
+	testCube3->SetMesh(Mesh::LoadFromMeshFile("Cube.msh"));
+	testCube3->SetTexture(grassTex);
+	
+	root->AddChild(testCube3);
 
 	// animation test
 
-	for (int i = 0; i < 10; i++) {
-		SceneNode* animationfather = new SceneNode();
-
-		AnimatedNode* skeleton = new AnimatedNode();
-
-		skeleton->SetTransform(Matrix4::Translation(Vector3((rand() % (int)(0.7 * heightmapSize.x)) + (0.15 * heightmapSize.x), 50.0f, (rand() % (int)(0.7 * heightmapSize.z)) + (0.15 * heightmapSize.z))));
-		skeleton->SetColour(Vector4(1.0f, 1.0f, 1.0f, 0.8f));
-		skeleton->SetModelScale(Vector3(600.0f, 600.0f, 600.0f));
-		skeleton->SetBoundingRadius(600.0f);
-		skeleton->SetMesh(animMesh);
-		skeleton->setAnim("skeleton.anm");
-		skeleton->setMat("skeleton.mat");
-
-		animationfather->AddChild(skeleton);
-
-		root->AddChild(animationfather);
-	}
+	//for (int i = 0; i < 10; i++) {
+	//	SceneNode* animationfather = new SceneNode();
+	//
+	//	AnimatedNode* skeleton = new AnimatedNode();
+	//
+	//	skeleton->SetTransform(Matrix4::Translation(Vector3((rand() % (int)(0.7 * heightmapSize.x)) + (0.15 * heightmapSize.x), 50.0f, (rand() % (int)(0.7 * heightmapSize.z)) + (0.15 * heightmapSize.z))));
+	//	skeleton->SetColour(Vector4(1.0f, 1.0f, 1.0f, 0.8f));
+	//	skeleton->SetModelScale(Vector3(600.0f, 600.0f, 600.0f));
+	//	skeleton->SetBoundingRadius(600.0f);
+	//	skeleton->SetMesh(animMesh);
+	//	skeleton->setAnim("skeleton.anm");
+	//	skeleton->setMat("skeleton.mat");
+	//
+	//	animationfather->AddChild(skeleton);
+	//
+	//	root->AddChild(animationfather);
+	//}
 
 	glGenFramebuffers(1, &alphaFBO);
 	glGenFramebuffers(1, &alphaFBO_2);
@@ -633,31 +696,31 @@ void Renderer::FillBuffers() {
 	//
 	DrawSkybox();
 
-	BindShader(heightShader);
-	glUniform1i(glGetUniformLocation(heightShader->GetProgram(), "diffuseTex"), 0);
-	glUniform1i(glGetUniformLocation(heightShader->GetProgram(), "bumpTex"), 1);
-	glUniform1i(glGetUniformLocation(heightShader->GetProgram(), "diffuseTex_2"), 2);
-	glUniform1i(glGetUniformLocation(heightShader->GetProgram(), "bumpTex_2"), 3);
-
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, grassTex);
-
-	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, grassBump);
-
-	glActiveTexture(GL_TEXTURE2);
-	glBindTexture(GL_TEXTURE_2D, earthTex);
-
-	glActiveTexture(GL_TEXTURE3);
-	glBindTexture(GL_TEXTURE_2D, earthBump);
-
-	modelMatrix.ToIdentity();
-	viewMatrix = activeCamera->BuildViewMatrix();
-	projMatrix = Matrix4::Perspective(1.0f, 10000.0f, (float)width / (float)height, 45.0f);
-
-	UpdateShaderMatrices();
-
-	heightMap->Draw();
+	//BindShader(heightShader);
+	//glUniform1i(glGetUniformLocation(heightShader->GetProgram(), "diffuseTex"), 0);
+	//glUniform1i(glGetUniformLocation(heightShader->GetProgram(), "bumpTex"), 1);
+	//glUniform1i(glGetUniformLocation(heightShader->GetProgram(), "diffuseTex_2"), 2);
+	//glUniform1i(glGetUniformLocation(heightShader->GetProgram(), "bumpTex_2"), 3);
+	//
+	//glActiveTexture(GL_TEXTURE0);
+	//glBindTexture(GL_TEXTURE_2D, grassTex);
+	//
+	//glActiveTexture(GL_TEXTURE1);
+	//glBindTexture(GL_TEXTURE_2D, grassBump);
+	//
+	//glActiveTexture(GL_TEXTURE2);
+	//glBindTexture(GL_TEXTURE_2D, earthTex);
+	//
+	//glActiveTexture(GL_TEXTURE3);
+	//glBindTexture(GL_TEXTURE_2D, earthBump);
+	//
+	//modelMatrix.ToIdentity();
+	//viewMatrix = activeCamera->BuildViewMatrix();
+	//projMatrix = Matrix4::Perspective(1.0f, 10000.0f, (float)width / (float)height, 45.0f);
+	//
+	//UpdateShaderMatrices();
+	//
+	//heightMap->Draw();
 	//
 	//render meshes
 
@@ -780,9 +843,13 @@ void Renderer::RaymarchLighting()
 
 	glDisable(GL_DEPTH_TEST);
 
-	glUniform1i(glGetUniformLocation(marchShader->GetProgram(), "positionTexture"), 0);
+	//glUniform1i(glGetUniformLocation(marchShader->GetProgram(), "positionTexture"), 0);
+	//glActiveTexture(GL_TEXTURE0);
+	//glBindTexture(GL_TEXTURE_2D, bufferViewSpacePosTex);
+
+	glUniform1i(glGetUniformLocation(marchShader->GetProgram(), "depthTex"), 0);
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, bufferViewSpacePosTex);
+	glBindTexture(GL_TEXTURE_2D, bufferDepthTex);
 
 	glUniform1i(glGetUniformLocation(marchShader->GetProgram(), "hemisphereTexture"), 1);
 	glActiveTexture(GL_TEXTURE1);
@@ -794,6 +861,15 @@ void Renderer::RaymarchLighting()
 
 	projMatrix = Matrix4::Perspective(1.0f, 10000.0f, (float)width / (float)height, 45.0f);
 	glUniformMatrix4fv(glGetUniformLocation(marchShader->GetProgram(), "lensProjection"), 1, false, projMatrix.values);
+
+	Matrix4 invProj = projMatrix.Inverse();
+	glUniformMatrix4fv(glGetUniformLocation(marchShader->GetProgram(), "inverseProjection"), 1, false, invProj.values);
+
+	glUniformMatrix4fv(glGetUniformLocation(marchShader->GetProgram(), "viewMatrix"), 1, false, activeCamera->BuildViewMatrix().values);
+
+	
+
+	glUniform2f(glGetUniformLocation(marchShader->GetProgram(), "pixelSize"), 1.0f / width, 1.0f / height);
 
 	quad->Draw();
 
@@ -818,17 +894,17 @@ void Renderer::DrawToScreen() {
 
 
 	
-	glActiveTexture(GL_TEXTURE0);
+
 
 	glUniform1i(glGetUniformLocation(endshader->GetProgram(), "diffuseTex"), 0);
-
-	//glBindTexture(GL_TEXTURE_2D, alphaColourTex);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, alphaColourTex);
 
 	//stochastic test
 	//glBindTexture(GL_TEXTURE_2D, bufferStochasticNormalTex);
 
 	//UV test
-	glBindTexture(GL_TEXTURE_2D, bufferUVTex);
+	//glBindTexture(GL_TEXTURE_2D, bufferUVTex);
 
 	//Normal test
 	//glBindTexture(GL_TEXTURE_2D, bufferNormalTex);
