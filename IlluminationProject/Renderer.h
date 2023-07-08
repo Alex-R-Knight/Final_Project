@@ -112,11 +112,15 @@ protected:
 	//...
 	// Global Illumination Part
 	GLuint bufferStochasticNormalTex; // Stochastic normals go here
-	GLuint bufferViewSpacePosTex; // Viewspace position goes here
 
 	// Global illumination UV buffer
 	GLuint UVFBO;			// FBO for UV storage
 	GLuint bufferUVTex;			// UV goes here
+	// Debug values in these
+	GLuint bufferViewSpacePosTex; // Viewspace position goes here
+	GLuint debugStorageTex1;
+	GLuint debugStorageTex2;
+	GLuint debugStorageTex3;
 
 	GLuint pointLightFBO; //FBO for our lighting pass
 	GLuint lightDiffuseTex; // Store diffuse lighting
@@ -142,6 +146,10 @@ protected:
 	GLuint texture;
 	GLuint glassTex;
 	GLuint cubeMap;
+
+	// Reflect
+	GLuint reflectiveTex;
+	GLuint unreflectiveTex;
 
 	Mesh* animMesh;
 

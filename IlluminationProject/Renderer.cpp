@@ -41,6 +41,14 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 		TEXTUREDIR"stubdot3.tga", SOIL_LOAD_AUTO,
 		SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
 
+	reflectiveTex = SOIL_load_OGL_texture(
+		TEXTUREDIR"fullreflect.tga", SOIL_LOAD_AUTO,
+		SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
+
+	unreflectiveTex = SOIL_load_OGL_texture(
+		TEXTUREDIR"noreflect.tga", SOIL_LOAD_AUTO,
+		SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
+
 	//cubeMap = SOIL_load_OGL_cubemap(
 	//	TEXTUREDIR"nightsky2_left.png", TEXTUREDIR"nightsky2_right.png",
 	//	TEXTUREDIR"nightsky2_up.png", TEXTUREDIR"nightsky2_down.png",
@@ -64,6 +72,9 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	SetTextureRepeating(grassTex, true);
 	SetTextureRepeating(grassBump, true);
 	SetTextureRepeating(nullBump, true);
+
+	SetTextureRepeating(reflectiveTex, true);
+	SetTextureRepeating(unreflectiveTex, true);
 
 	Vector3 heightmapSize = heightMap->GetHeightmapSize();
 
@@ -240,6 +251,26 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	
 	root->AddChild(testCube3);
 
+	SceneNode* testCube4 = new SceneNode();
+	testCube4->SetTransform(Matrix4::Translation(Vector3(0.0f, 0.0f, -30.0f)));
+	testCube4->SetColour(Vector4(1.0f, 1.0f, 1.0f, 1.0f));
+	testCube4->SetModelScale(Vector3(5.0f, 5.0f, 5.0f));
+	testCube4->SetBoundingRadius(2000.0f);
+	testCube4->SetMesh(Mesh::LoadFromMeshFile("Cube.msh"));
+	testCube4->SetTexture(earthTex);
+
+	root->AddChild(testCube4);
+
+	SceneNode* testCube5 = new SceneNode();
+	testCube5->SetTransform(Matrix4::Translation(Vector3(5.0f, 0.0f, -30.0f)));
+	testCube5->SetColour(Vector4(1.0f, 1.0f, 1.0f, 1.0f));
+	testCube5->SetModelScale(Vector3(5.0f, 5.0f, 5.0f));
+	testCube5->SetBoundingRadius(2000.0f);
+	testCube5->SetMesh(Mesh::LoadFromMeshFile("Cube.msh"));
+	testCube5->SetTexture(grassTex);
+
+	root->AddChild(testCube5);
+
 	// animation test
 
 	//for (int i = 0; i < 10; i++) {
@@ -268,11 +299,12 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 
 	glGenFramebuffers(1, &UVFBO);
 
-	GLenum buffers[4] = {
+	GLenum buffers[5] = {
 		GL_COLOR_ATTACHMENT0 ,
 		GL_COLOR_ATTACHMENT1 ,
 		GL_COLOR_ATTACHMENT2 ,
-		GL_COLOR_ATTACHMENT3
+		GL_COLOR_ATTACHMENT3 ,
+		GL_COLOR_ATTACHMENT4
 	};
 
 	// Generate our scene depth texture ...
@@ -285,13 +317,15 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	GenerateScreenTexture(bufferColourTex);
 	GenerateScreenTexture(bufferNormalTex);
 	GenerateScreenTexture(bufferStochasticNormalTex);
-	//GenerateScreenTexture(bufferViewSpacePosTex);
 	GenerateScreenTexture(lightDiffuseTex);
 	GenerateScreenTexture(lightSpecularTex);
 
 	GenerateScreenTexture(bufferUVTex);
 
 	GeneratePositionTexture(bufferViewSpacePosTex);
+	GeneratePositionTexture(debugStorageTex1);
+	GeneratePositionTexture(debugStorageTex2);
+	GeneratePositionTexture(debugStorageTex3);
 
 	//First camera alpha FBO
 	glBindFramebuffer(GL_FRAMEBUFFER, alphaFBO);
@@ -339,7 +373,10 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	glBindFramebuffer(GL_FRAMEBUFFER, UVFBO);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, bufferUVTex, 0);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, bufferViewSpacePosTex, 0);
-	glDrawBuffers(2, buffers);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, debugStorageTex1, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT3, GL_TEXTURE_2D, debugStorageTex2, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT4, GL_TEXTURE_2D, debugStorageTex3, 0);
+	glDrawBuffers(5, buffers);
 
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
 		return;
@@ -389,10 +426,14 @@ Renderer::~Renderer(void) {
 	glDeleteTextures(1, &bufferColourTex);
 	glDeleteTextures(1, &bufferNormalTex);
 	glDeleteTextures(1, &bufferStochasticNormalTex);
-	glDeleteTextures(1, &bufferViewSpacePosTex);
 	glDeleteTextures(1, &bufferDepthTex);
 	glDeleteTextures(1, &lightDiffuseTex);
 	glDeleteTextures(1, &lightSpecularTex);
+
+	glDeleteTextures(1, &bufferViewSpacePosTex);
+	glDeleteTextures(1, &debugStorageTex1);
+	glDeleteTextures(1, &debugStorageTex2);
+	glDeleteTextures(1, &debugStorageTex3);
 
 	glDeleteFramebuffers(1, &processFBO);
 	glDeleteFramebuffers(1, &currentAlphaFBO);
@@ -429,7 +470,7 @@ void Renderer::GeneratePositionTexture(GLuint& into)
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, width, height, 0, GL_RGB, GL_FLOAT, NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width, height, 0, GL_RGBA, GL_FLOAT, NULL);
 
 	glBindTexture(GL_TEXTURE_2D, 0);
 }
@@ -814,8 +855,10 @@ void Renderer::DrawAlphaMeshes() {
 void Renderer::RaymarchLighting()
 {
 	glBindFramebuffer(GL_FRAMEBUFFER, UVFBO);
-	glClear(GL_COLOR_BUFFER_BIT);
 	BindShader(marchShader);
+
+	glClearColor(0, 0, 0, 1);
+	glClear(GL_COLOR_BUFFER_BIT);
 
 	modelMatrix.ToIdentity();
 	viewMatrix.ToIdentity();
@@ -855,6 +898,8 @@ void Renderer::RaymarchLighting()
 	glUniform2f(glGetUniformLocation(marchShader->GetProgram(), "pixelSize"), 1.0f / width, 1.0f / height);
 
 	quad->Draw();
+
+	glClearColor(0.2f, 0.2f, 0.2f, 1);
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glEnable(GL_DEPTH_TEST);
