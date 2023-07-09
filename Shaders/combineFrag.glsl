@@ -23,7 +23,14 @@ void main(void) {
 	// new reflection method
 	vec4 reflectColour	= texture(rayMarchUV,	IN.texCoord);
 
-	fragColour			= mix( texture(diffuseTex,	IN.texCoord), reflectColour, texture(reflectivity,	IN.texCoord).r );
+	float reflectivity	= texture(reflectivity,	IN.texCoord).r;
+
+	fragColour			= ( reflectivity <= 0.0 ) ? texture(diffuseTex,	IN.texCoord) : mix( texture(diffuseTex,	IN.texCoord), reflectColour, 0.5 );
+
+	// Default reflection with skybox
+	//fragColour			= mix( texture(diffuseTex,	IN.texCoord), reflectColour, texture(reflectivity,	IN.texCoord).r );
+
+
 
 	//fragColour = texture(diffuseTex,	IN.texCoord);
 
