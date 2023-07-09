@@ -49,11 +49,11 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 		TEXTUREDIR"noreflect.tga", SOIL_LOAD_AUTO,
 		SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
 
-	//cubeMap = SOIL_load_OGL_cubemap(
-	//	TEXTUREDIR"nightsky2_left.png", TEXTUREDIR"nightsky2_right.png",
-	//	TEXTUREDIR"nightsky2_up.png", TEXTUREDIR"nightsky2_down.png",
-	//	TEXTUREDIR"nightsky2_front.png", TEXTUREDIR"nightsky2_back.png",
-	//	SOIL_LOAD_RGB, SOIL_CREATE_NEW_ID, 0);
+	cubeMap = SOIL_load_OGL_cubemap(
+		TEXTUREDIR"nightsky2_left.png", TEXTUREDIR"nightsky2_right.png",
+		TEXTUREDIR"nightsky2_up.png", TEXTUREDIR"nightsky2_down.png",
+		TEXTUREDIR"nightsky2_front.png", TEXTUREDIR"nightsky2_back.png",
+		SOIL_LOAD_RGB, SOIL_CREATE_NEW_ID, 0);
 
 	glassTex = SOIL_load_OGL_texture(
 		TEXTUREDIR"stainedglasstreetex.png", SOIL_LOAD_AUTO,
@@ -734,7 +734,7 @@ void Renderer::FillBuffers() {
 	glBindFramebuffer(GL_FRAMEBUFFER, bufferFBO);
 	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 	//
-	//DrawSkybox();
+	DrawSkybox();
 
 	//BindShader(heightShader);
 	//glUniform1i(glGetUniformLocation(heightShader->GetProgram(), "diffuseTex"), 0);

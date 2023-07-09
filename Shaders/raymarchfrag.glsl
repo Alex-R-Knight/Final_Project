@@ -36,10 +36,10 @@ uniform sampler2D reflectionTexture;
 
 //// Raymarch Parameters ////
 
-//float maxDistance = 50;
-//float resolution = 1;
-//int steps = 25;
-//const float thickness = 0.1;
+float maxDistance = 50;
+float resolution = 1.0;
+int steps = 25;
+const float thickness = 0.1;
 
 /////////////////////////////
 
@@ -76,10 +76,10 @@ vec4 viewSpacePosFromDepth(vec2 inCoord) {
 
 void main(void) {
 
-float maxDistance = 50;
-float resolution = 1;
-int steps = 25;
-const float thickness = 0.1f;
+//float maxDistance = 50;
+//float resolution = 1;
+//int steps = 25;
+//const float thickness = 0.1f;
 
 
 ////// UV vec4 to be used as shader output //////
