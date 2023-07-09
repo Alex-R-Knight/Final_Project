@@ -31,6 +31,8 @@ uniform sampler2D depthTex;
 
 uniform sampler2D hemisphereTexture;
 uniform sampler2D normalTexture;
+//reflect
+uniform sampler2D reflectionTexture;
 
 //// Raymarch Parameters ////
 
@@ -91,7 +93,7 @@ const float thickness = 0.1f;
 
 	// Terminate if invalid
 	//if ( positionFrom.w <= 0.0 ) { fragColor = vec4(0.0f, 0.0f, 0.0f, 0.0f); return; }
-	if ( positionFrom.w <= 0.0 ) { uvOutput = vec4(0.0f, 0.0f, 0.0f, 0.0f); return; }
+	if ( positionFrom.w <= 0.0 || texture(reflectionTexture, newTexCoord.xy).r <= 0.0 ) { uvOutput = vec4(0.0f, 0.0f, 0.0f, 0.0f); return; }
 
 	// Produces normalized vector of viewspace position
 	vec3 unitPositionFrom = normalize(positionFrom.xyz);

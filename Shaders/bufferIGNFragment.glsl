@@ -3,6 +3,9 @@
 uniform sampler2D diffuseTex; // Diffuse texture map
 uniform sampler2D bumpTex; //Bump map
 
+// Reflect
+uniform sampler2D reflectTex; //reflect map
+
 in Vertex{
 	vec3 colour;
 	vec2 texCoord;
@@ -13,7 +16,7 @@ in Vertex{
 	vec3 viewSpacePos;
 } IN;
 
-out vec4 fragColour[3]; //Our final outputted colours!
+out vec4 fragColour[4]; //Our final outputted colours!
 
 void main(void) {
 	if (texture(diffuseTex, IN.texCoord).a < 0.5) {
@@ -75,7 +78,7 @@ void main(void) {
 
 	fragColour[2] = vec4(sampleDir.xyz * 0.5 + 0.5, 1.0);
 
-	//// Viewspace Pos ////
+	//// Reflection
 
-	//fragColour[3] = vec4(IN.viewSpacePos.xyz, 1.0);
+	fragColour[3] = texture2D(reflectTex, IN.texCoord);
 }

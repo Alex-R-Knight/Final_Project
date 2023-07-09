@@ -112,6 +112,9 @@ protected:
 	//...
 	// Global Illumination Part
 	GLuint bufferStochasticNormalTex; // Stochastic normals go here
+	// Reflection part
+	GLuint reflectionBufferTex;
+
 
 	// Global illumination UV buffer
 	GLuint UVFBO;			// FBO for UV storage
@@ -148,6 +151,8 @@ protected:
 	GLuint cubeMap;
 
 	// Reflect
+	GLuint reflectStorage;
+
 	GLuint reflectiveTex;
 	GLuint unreflectiveTex;
 

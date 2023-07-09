@@ -218,6 +218,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	testFloor->SetBoundingRadius(2000.0f);
 	testFloor->SetMesh(Mesh::LoadFromMeshFile("Cube.msh"));
 	testFloor->SetTexture(earthTex);
+	testFloor->SetReflect(reflectiveTex);
 
 	root->AddChild(testFloor);
 
@@ -228,6 +229,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	testCube->SetBoundingRadius(2000.0f);
 	testCube->SetMesh(Mesh::LoadFromMeshFile("Cube.msh"));
 	testCube->SetTexture(earthTex);
+	testCube->SetReflect(unreflectiveTex);
 	
 	root->AddChild(testCube);
 	
@@ -238,6 +240,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	testCube2->SetBoundingRadius(2000.0f);
 	testCube2->SetMesh(Mesh::LoadFromMeshFile("Cube.msh"));
 	testCube2->SetTexture(earthTex);
+	testCube2->SetReflect(unreflectiveTex);
 	
 	root->AddChild(testCube2);
 	
@@ -248,6 +251,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	testCube3->SetBoundingRadius(2000.0f);
 	testCube3->SetMesh(Mesh::LoadFromMeshFile("Cube.msh"));
 	testCube3->SetTexture(grassTex);
+	testCube3->SetReflect(unreflectiveTex);
 	
 	root->AddChild(testCube3);
 
@@ -258,6 +262,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	testCube4->SetBoundingRadius(2000.0f);
 	testCube4->SetMesh(Mesh::LoadFromMeshFile("Cube.msh"));
 	testCube4->SetTexture(earthTex);
+	testCube4->SetReflect(unreflectiveTex);
 
 	root->AddChild(testCube4);
 
@@ -268,6 +273,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	testCube5->SetBoundingRadius(2000.0f);
 	testCube5->SetMesh(Mesh::LoadFromMeshFile("Cube.msh"));
 	testCube5->SetTexture(grassTex);
+	testCube5->SetReflect(unreflectiveTex);
 
 	root->AddChild(testCube5);
 
@@ -317,6 +323,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	GenerateScreenTexture(bufferColourTex);
 	GenerateScreenTexture(bufferNormalTex);
 	GenerateScreenTexture(bufferStochasticNormalTex);
+	GenerateScreenTexture(reflectionBufferTex);
 	GenerateScreenTexture(lightDiffuseTex);
 	GenerateScreenTexture(lightSpecularTex);
 
@@ -352,8 +359,9 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, bufferColourTex, 0);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, bufferNormalTex, 0);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, bufferStochasticNormalTex, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT3, GL_TEXTURE_2D, reflectionBufferTex, 0);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, bufferDepthTex, 0);
-	glDrawBuffers(3, buffers);
+	glDrawBuffers(4, buffers);
 
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
 		return;
@@ -426,6 +434,7 @@ Renderer::~Renderer(void) {
 	glDeleteTextures(1, &bufferColourTex);
 	glDeleteTextures(1, &bufferNormalTex);
 	glDeleteTextures(1, &bufferStochasticNormalTex);
+	glDeleteTextures(1, &reflectionBufferTex);
 	glDeleteTextures(1, &bufferDepthTex);
 	glDeleteTextures(1, &lightDiffuseTex);
 	glDeleteTextures(1, &lightSpecularTex);
@@ -593,9 +602,15 @@ void Renderer::DrawNode(SceneNode* n) {
 		texture = n->GetTexture();
 		SetTextureRepeating(texture, true);
 
+		reflectStorage = n->GetReflect();
+		SetTextureRepeating(reflectStorage, true);
+
 		glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "diffuseTex"), 0);
 
 		glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "bumpTex"), 1);
+
+		glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "reflectTex"), 2);
+		
 		UpdateShaderMatrices();
 		Matrix4 model = n->GetWorldTransform() * Matrix4::Scale(n->GetModelScale());
 		glUniformMatrix4fv(glGetUniformLocation(currentShader->GetProgram(), "modelMatrix"), 1, false, model.values);
@@ -605,6 +620,9 @@ void Renderer::DrawNode(SceneNode* n) {
 
 		glActiveTexture(GL_TEXTURE1);
 		glBindTexture(GL_TEXTURE_2D, nullBump);
+
+		glActiveTexture(GL_TEXTURE2);
+		glBindTexture(GL_TEXTURE_2D, reflectStorage);
 
 		n->Draw(*this);
 	}
@@ -883,6 +901,11 @@ void Renderer::RaymarchLighting()
 	glUniform1i(glGetUniformLocation(marchShader->GetProgram(), "normalTexture"), 2);
 	glActiveTexture(GL_TEXTURE2);
 	glBindTexture(GL_TEXTURE_2D, bufferNormalTex);
+
+	glUniform1i(glGetUniformLocation(marchShader->GetProgram(), "reflectionTexture"), 3);
+	glActiveTexture(GL_TEXTURE3);
+	glBindTexture(GL_TEXTURE_2D, reflectionBufferTex);
+	
 
 	Matrix4 tempProjMatrix = Matrix4::Perspective(1.0f, 10000.0f, (float)width / (float)height, 45.0f);
 	glUniformMatrix4fv(glGetUniformLocation(marchShader->GetProgram(), "lensProjection"), 1, false, tempProjMatrix.values);
