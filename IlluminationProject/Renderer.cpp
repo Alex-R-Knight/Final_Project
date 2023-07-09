@@ -845,6 +845,12 @@ void Renderer::CombineBuffers() {
 	glActiveTexture(GL_TEXTURE3);
 	glBindTexture(GL_TEXTURE_2D, bufferUVTex);
 
+	glUniform1i(glGetUniformLocation(combineShader->GetProgram(), "reflectivity"), 4);
+	glActiveTexture(GL_TEXTURE4);
+	glBindTexture(GL_TEXTURE_2D, reflectionBufferTex);
+
+	
+
 	quad->Draw();
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -905,7 +911,16 @@ void Renderer::RaymarchLighting()
 	glUniform1i(glGetUniformLocation(marchShader->GetProgram(), "reflectionTexture"), 3);
 	glActiveTexture(GL_TEXTURE3);
 	glBindTexture(GL_TEXTURE_2D, reflectionBufferTex);
-	
+
+	// Skybox
+	glUniform1i(glGetUniformLocation(marchShader->GetProgram(), "cubeTex"), 4);
+	glActiveTexture(GL_TEXTURE4);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, cubeMap);
+
+	//Reflected geometry colour
+	glUniform1i(glGetUniformLocation(marchShader->GetProgram(), "baseTexture"), 5);
+	glActiveTexture(GL_TEXTURE5);
+	glBindTexture(GL_TEXTURE_2D, bufferColourTex);
 
 	Matrix4 tempProjMatrix = Matrix4::Perspective(1.0f, 10000.0f, (float)width / (float)height, 45.0f);
 	glUniformMatrix4fv(glGetUniformLocation(marchShader->GetProgram(), "lensProjection"), 1, false, tempProjMatrix.values);
@@ -916,6 +931,12 @@ void Renderer::RaymarchLighting()
 	Matrix4 tempViewMatrix = activeCamera->BuildViewMatrix();
 	glUniformMatrix4fv(glGetUniformLocation(marchShader->GetProgram(), "NormalViewMatrix"), 1, false, tempViewMatrix.values);
 
+	Matrix4 inverseTempViewMatrix = tempViewMatrix.Inverse();
+	glUniformMatrix4fv(glGetUniformLocation(marchShader->GetProgram(), "InverseViewMatrix"), 1, false, inverseTempViewMatrix.values);
+	
+
+	// Camera position
+	glUniform3fv(glGetUniformLocation(marchShader->GetProgram(), "cameraPos"), 1, (float*)&activeCamera->GetPosition());
 	
 
 	glUniform2f(glGetUniformLocation(marchShader->GetProgram(), "pixelSize"), 1.0f / width, 1.0f / height);

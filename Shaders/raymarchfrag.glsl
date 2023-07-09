@@ -20,9 +20,12 @@ out vec4 debugOutput3;
 out vec4 debugOutput4;
 
 
+uniform vec3 cameraPos;
+
 uniform mat4 lensProjection;
 uniform mat4 inverseProjection;
 uniform mat4 NormalViewMatrix;
+uniform mat4 InverseViewMatrix;
 
 uniform vec2 pixelSize; // reciprocal of resolution
 
@@ -34,12 +37,19 @@ uniform sampler2D normalTexture;
 //reflect
 uniform sampler2D reflectionTexture;
 
+// skybox
+uniform samplerCube cubeTex;
+
+// input colour
+uniform sampler2D baseTexture;
+
+
 //// Raymarch Parameters ////
 
 float maxDistance = 50;
 float resolution = 1.0;
 int steps = 25;
-const float thickness = 0.1;
+const float thickness = 0.3;
 
 /////////////////////////////
 
@@ -516,26 +526,35 @@ float visibility =
 	// Defauly viability value
 	//uv.b = (hit1 == 1.0) ? 1.0f : 0.0f;
 	
+	vec4 worldPosTemp = InverseViewMatrix * vec4(positionFrom.xyz, 1.0);
+
+	vec3 worldPos = worldPosTemp.xyz / worldPosTemp.w;
+
+
+	vec3 worldViewDir = normalize(cameraPos - worldPos);
+
+	vec3 cubeMapReflectDirection = reflect( -worldViewDir, normalize( texture(normalTexture, newTexCoord.xy).xyz * 2.0 - 1.0 ) );
+
+
 	
+	// Output actual reflected colour to buffer
+	if ( uv.b <= 0.0 ) {	
+		uvOutput = texture( cubeTex, cubeMapReflectDirection );
+	}
+	else {
+		uvOutput = texture( baseTexture, uv.xy);
+	}
 	
-	//uv.b = 1.0f;
 
+	// quick visibility test
+	debugValue2 = vec4(uv.b, 0, 0, 1);
 
-	//fragColor = uv;
+	// output UV coords with "value" in B component
+	//uvOutput = vec4(uv.xyz, 1.0);
 
-	//uvOutput = uv;
-
-	// debug output test
-	uvOutput = vec4(uv.xyz, 1.0);
-
-
+	// Debug buffers
 	debugOutput = debugValue;
 	debugOutput2 = debugValue2;
 	debugOutput3 = debugValue3;
 	debugOutput4 = debugValue4;
 }
-
-// depth buffer seems right
-//sampled with UV coords
-// are UV coordinates right first time around
-// 32bit float, renderdoc, capture frames

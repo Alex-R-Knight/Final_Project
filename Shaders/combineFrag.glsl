@@ -4,6 +4,8 @@ uniform sampler2D diffuseLight;
 uniform sampler2D specularLight;
 uniform sampler2D rayMarchUV;
 
+uniform sampler2D reflectivity;
+
 in Vertex{
 	vec2 texCoord;
 } IN;
@@ -15,17 +17,18 @@ void main(void) {
 	vec2 texSize	= textureSize(diffuseTex, 0).xy;
 	vec2 newTexCoord	= gl_FragCoord.xy / texSize;
 
-	vec4 uv			= texture(rayMarchUV,	IN.texCoord);
-	vec4 color		= texture(diffuseTex,	uv.xy);
+	//vec4 uv			= texture(rayMarchUV,	IN.texCoord);
+	//vec4 color		= texture(diffuseTex,	uv.xy);
 
-	//float alpha		= clamp(uv.b, 0, 1);
-	//
-	//fragColour		= vec4(mix(vec3(0), color.rgb, alpha), alpha);
+	// new reflection method
+	vec4 reflectColour	= texture(rayMarchUV,	IN.texCoord);
 
-	fragColour = texture(diffuseTex,	IN.texCoord);
+	fragColour			= mix( texture(diffuseTex,	IN.texCoord), reflectColour, texture(reflectivity,	IN.texCoord).r );
+
+	//fragColour = texture(diffuseTex,	IN.texCoord);
 
 
-	fragColour = mix(fragColour, color, uv.b);
+	//fragColour = mix(fragColour, color, uv.b);
 
 
 	//if (uv.b == 1.0f) {
