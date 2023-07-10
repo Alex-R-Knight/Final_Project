@@ -9,6 +9,8 @@
 const int LIGHT_NUM = 25;
 const int POST_PASSES = 10;
 
+const int REFLECT_BLUR_PASSES = 2;
+
 Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	sphere = Mesh::LoadFromMeshFile("Sphere.msh");
 	//cube = Mesh::LoadFromMeshFile("OffsetCubeY.msh");
@@ -691,7 +693,8 @@ void Renderer::RenderScene() {
 	DrawPointLights();
 
 	// Raymarch
-	RaymarchLighting();
+	RaymarchReflection();
+	ReflectionBlurring();
 
 	CombineBuffers();
 
@@ -876,7 +879,7 @@ void Renderer::DrawAlphaMeshes() {
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-void Renderer::RaymarchLighting()
+void Renderer::RaymarchReflection()
 {
 	glBindFramebuffer(GL_FRAMEBUFFER, UVFBO);
 	BindShader(marchShader);
@@ -945,6 +948,38 @@ void Renderer::RaymarchLighting()
 
 	glClearColor(0.2f, 0.2f, 0.2f, 1);
 
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glEnable(GL_DEPTH_TEST);
+}
+
+void Renderer::ReflectionBlurring()
+{
+	glBindFramebuffer(GL_FRAMEBUFFER, processFBO);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, processColourTex, 0);
+	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+	BindShader(blurShader);
+
+	modelMatrix.ToIdentity();
+	viewMatrix.ToIdentity();
+	projMatrix.ToIdentity();
+	UpdateShaderMatrices();
+
+	glDisable(GL_DEPTH_TEST);
+
+	glActiveTexture(GL_TEXTURE0);
+	glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "sceneTex"), 0);
+	for (int i = 0; i < REFLECT_BLUR_PASSES; ++i) {
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, processColourTex, 0);
+		glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "isVertical"), 0);
+
+		glBindTexture(GL_TEXTURE_2D, bufferUVTex);
+		quad->Draw();
+		//Now to swap the colour buffers , and do the second blur pass
+		glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "isVertical"), 1);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, bufferUVTex, 0);
+		glBindTexture(GL_TEXTURE_2D, processColourTex);
+		quad->Draw();
+	}
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glEnable(GL_DEPTH_TEST);
 }

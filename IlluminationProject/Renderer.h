@@ -54,7 +54,9 @@ protected:
 
 	void DrawAlphaMeshes(); //Draw transparent meshes after
 
-	void RaymarchLighting();
+	void RaymarchReflection();
+	void ReflectionBlurring();
+
 
 	void BuildNodeLists(SceneNode* from);
 	void SortNodeLists();
