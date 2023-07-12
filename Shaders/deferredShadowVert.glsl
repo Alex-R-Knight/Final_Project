@@ -1,9 +1,10 @@
-#version 330 core
+# version 330 core
+uniform mat4 modelMatrix ;
+uniform mat4 viewMatrix ;
+uniform mat4 projMatrix ;
 
-layout (location = 0) in vec3 position;
+in vec3 position ;
 
-uniform mat4 modelMatrix;
-
-void main(void) {
-	gl_Position = modelMatrix * vec4(position, 1.0);
+void main ( void ) {
+	gl_Position = ( projMatrix * viewMatrix * modelMatrix ) * vec4 ( position , 1.0);
 }

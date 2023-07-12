@@ -12,7 +12,7 @@ const int POST_PASSES = 10;
 const int REFLECT_BLUR_PASSES = 2;
 
 // Deferred shadowmapping
-const unsigned int SHADOW_WIDTH = 1024, SHADOW_HEIGHT = 1024;
+const unsigned int SHADOWSIZE = 2048;
 
 Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	sphere = Mesh::LoadFromMeshFile("Sphere.msh");
@@ -141,8 +141,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 		"raymarchfrag.glsl");
 
 	shadowShader = new Shader("deferredShadowVert.glsl",
-		"deferredShadowFrag.glsl",
-		"deferredShadowGeom.glsl"		);
+		"deferredShadowFrag.glsl");
 
 	if (!sceneShader->LoadSuccess()			|| !pointlightShader->LoadSuccess()
 		|| !combineShader->LoadSuccess()	|| !skyboxShader->LoadSuccess()
@@ -185,7 +184,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 
 	for (int i = 0; i < LIGHT_NUM; i++) {
 
-		Vector3 newlocation = Vector3(0.0f, 15.0f - i*30.0f, -10.0f);
+		Vector3 newlocation = Vector3(10.0f - i * 10.0f, 5.0f, -10.0f);
 
 		Light& l = pointLights[i];
 		l.SetPosition(Vector3(newlocation.x, newlocation.y, newlocation.z));
@@ -334,43 +333,58 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 ////// Deferred shadowmapping
 
 	shadowProj = Matrix4::Perspective(1, 100, 1, 90);
-	
+
 	for (int i = 0; i < LIGHT_NUM; i++) {
 	
-		GLuint shadowCubeMap;
-		glGenTextures(1, &shadowCubeMap);
-		depthCubemap.emplace_back(shadowCubeMap);
-	
-		GLuint shadowFBO;
-		glGenFramebuffers(1, &shadowFBO);
-		depthMapFBO.emplace_back(shadowFBO);
-	
-		glBindTexture(GL_TEXTURE_CUBE_MAP, depthCubemap[i]);
-		
-		for (unsigned int i = 0; i < 6; ++i) {
-			glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_DEPTH_COMPONENT, SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
-		
-			glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-			glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-			glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-			glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-			glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+		vector<GLuint> newShadowFBOs;
+
+		vector<GLuint> shadowTextures;
+
+		for (int i = 0; i < 6; i++)
+		{
+			GLuint newFBO;
+			newShadowFBOs.push_back(newFBO);
+
+
+			GLuint shadowTex;
+			shadowTextures.push_back(shadowTex);
+
+			glGenTextures(1, &shadowTextures[i]);
+			glBindTexture(GL_TEXTURE_2D, shadowTextures[i]);
+			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, SHADOWSIZE, SHADOWSIZE, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+
+			glBindTexture(GL_TEXTURE_2D, 0);
+
+			////
+
+			glGenFramebuffers(1, &newShadowFBOs[i]);
+
+			glBindFramebuffer(GL_FRAMEBUFFER, newShadowFBOs[i]);
+			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, shadowTextures[i], 0);
+			glDrawBuffer(GL_NONE);
+			glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
 		}
-		
-		glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO[i]);
-		glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, depthCubemap[i], 0);
-		glDrawBuffer(GL_NONE);
-		glReadBuffer(GL_NONE);
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+		shadowMaps.push_back(shadowTextures);
+
+		shadowFBO.push_back(newShadowFBOs);
+
+		// Light direction transforms
 		
 		vector<Matrix4> newLightTransforms;
+
 		// In order: X_pox, X_neg, Y_pos, Y_neg, Z_pos, Z_neg
-		newLightTransforms.push_back( shadowProj * Matrix4::BuildViewMatrix( pointLights[i].GetPosition(), Vector3(1, 0, 0)));
-		newLightTransforms.push_back( shadowProj * Matrix4::BuildViewMatrix( pointLights[i].GetPosition(), Vector3(-1, 0, 0)));
-		newLightTransforms.push_back( shadowProj * Matrix4::BuildViewMatrix( pointLights[i].GetPosition(), Vector3(0, 1, 0)));
-		newLightTransforms.push_back( shadowProj * Matrix4::BuildViewMatrix( pointLights[i].GetPosition(), Vector3(0, -1, 0)));
-		newLightTransforms.push_back( shadowProj * Matrix4::BuildViewMatrix( pointLights[i].GetPosition(), Vector3(0, 0, 1)));
-		newLightTransforms.push_back( shadowProj * Matrix4::BuildViewMatrix( pointLights[i].GetPosition(), Vector3(0, 0, -1)));
+		newLightTransforms.push_back( Matrix4::BuildViewMatrix( pointLights[i].GetPosition(), pointLights[i].GetPosition() + Vector3(1, 0, 0)));
+		newLightTransforms.push_back( Matrix4::BuildViewMatrix( pointLights[i].GetPosition(), pointLights[i].GetPosition() + Vector3(-1, 0, 0)));
+		newLightTransforms.push_back( Matrix4::BuildViewMatrix( pointLights[i].GetPosition(), pointLights[i].GetPosition() + Vector3(0, 1, 0)));
+		newLightTransforms.push_back( Matrix4::BuildViewMatrix( pointLights[i].GetPosition(), pointLights[i].GetPosition() + Vector3(0, -1, 0)));
+		newLightTransforms.push_back( Matrix4::BuildViewMatrix( pointLights[i].GetPosition(), pointLights[i].GetPosition() + Vector3(0, 0, 1)));
+		newLightTransforms.push_back( Matrix4::BuildViewMatrix( pointLights[i].GetPosition(), pointLights[i].GetPosition() + Vector3(0, 0, -1)));
 		
 		shadowTransforms.push_back(newLightTransforms);
 		
@@ -496,9 +510,21 @@ Renderer::~Renderer(void) {
 	glDeleteFramebuffers(1, &bufferFBO);
 	glDeleteFramebuffers(1, &pointLightFBO);
 
-	for (int i = 0; i < LIGHT_NUM; i++)
+
+	for (const auto& i : shadowFBO)
 	{
-		glDeleteFramebuffers(1, &depthMapFBO[i]);
+		for (int j = 0; j < 6; j++)
+		{
+			glDeleteFramebuffers(1, &i[j]);
+		}
+	}
+
+	for (const auto& i : shadowMaps)
+	{
+		for (int j = 0; j < 6; j++)
+		{
+			glDeleteTextures(1, &i[j]);
+		}
 	}
 }
 
@@ -734,23 +760,25 @@ void Renderer::DrawAlphaNode(SceneNode* n) {
 
 void Renderer::FillShadowMaps()
 {
-	
 
-	for (int i = 0; i < LIGHT_NUM; i++) {
+	for (int i = 0; i < LIGHT_NUM; i++)
+	{
+		for (int j = 0; j < 6; j++)
+		{
+			glBindFramebuffer(GL_FRAMEBUFFER, shadowFBO[i][j]);
 
-		glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO[i]);
+			glClear(GL_DEPTH_BUFFER_BIT);
+			glViewport(0, 0, SHADOWSIZE, SHADOWSIZE);
+			glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+			BindShader(shadowShader);
 
-		glClear(GL_DEPTH_BUFFER_BIT);
+			viewMatrix = shadowTransforms[i][j];
+			projMatrix = shadowProj;
+			UpdateShaderMatrices();
 
-		glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
 
-		glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-
-		BindShader(shadowShader);
-
-		glUniformMatrix4fv(glGetUniformLocation(marchShader->GetProgram(), "shadowMatrices"), shadowTransforms[i].size(), false, (float*)shadowTransforms[i].data());
-
-		DrawNodesSolid();
+			DrawNodesSolid();
+		}
 	}
 
 	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
@@ -806,7 +834,7 @@ void Renderer::DrawSkybox() {
 	BindShader(skyboxShader);
 	UpdateShaderMatrices();
 
-	glUniform1i(glGetUniformLocation(marchShader->GetProgram(), "cubeTex"), 0);
+	glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "cubeTex"), 0);
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, cubeMap);
 
@@ -819,34 +847,18 @@ void Renderer::FillBuffers() {
 	glBindFramebuffer(GL_FRAMEBUFFER, bufferFBO);
 	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 	//
-	DrawSkybox();
 
-	//BindShader(heightShader);
-	//glUniform1i(glGetUniformLocation(heightShader->GetProgram(), "diffuseTex"), 0);
-	//glUniform1i(glGetUniformLocation(heightShader->GetProgram(), "bumpTex"), 1);
-	//glUniform1i(glGetUniformLocation(heightShader->GetProgram(), "diffuseTex_2"), 2);
-	//glUniform1i(glGetUniformLocation(heightShader->GetProgram(), "bumpTex_2"), 3);
-	//
-	//glActiveTexture(GL_TEXTURE0);
-	//glBindTexture(GL_TEXTURE_2D, grassTex);
-	//
-	//glActiveTexture(GL_TEXTURE1);
-	//glBindTexture(GL_TEXTURE_2D, grassBump);
-	//
-	//glActiveTexture(GL_TEXTURE2);
-	//glBindTexture(GL_TEXTURE_2D, earthTex);
-	//
-	//glActiveTexture(GL_TEXTURE3);
-	//glBindTexture(GL_TEXTURE_2D, earthBump);
-	//
+	//DrawSkybox();
+
+	
 	modelMatrix.ToIdentity();
 	viewMatrix = activeCamera->BuildViewMatrix();
 	projMatrix = Matrix4::Perspective(1.0f, 10000.0f, (float)width / (float)height, 45.0f);
 	
 	UpdateShaderMatrices();
-	//
-	//heightMap->Draw();
-	//
+
+	DrawSkybox();
+	
 	//render meshes
 
 	BindShader(meshshader);

@@ -180,9 +180,8 @@ protected:
 
 
 	// Deferred shadowmapping
-	vector<GLuint> depthMapFBO;
-	vector<GLuint> depthCubemap;
+	vector<vector<GLuint>> shadowFBO;
+	vector<vector<GLuint>> shadowMaps;
 	Matrix4 shadowProj;
-
 	vector<vector<Matrix4>> shadowTransforms;
 };
