@@ -57,6 +57,9 @@ protected:
 	void RaymarchReflection();
 	void ReflectionBlurring();
 
+	//Deferred shadows
+	void FillShadowMaps();
+
 
 	void BuildNodeLists(SceneNode* from);
 	void SortNodeLists();
@@ -91,6 +94,9 @@ protected:
 
 	//// Raymarch Shader ////
 	Shader* marchShader;
+
+	// Deferred Shadows
+	Shader* shadowShader;
 
 	GLuint processFBO; //The FBO for post processing
 	GLuint processColourTex; //The texture for post processing

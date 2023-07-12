@@ -6,7 +6,7 @@
 #include <algorithm > //For std::sort ...
 #include "../nclgl/MeshAnimation.h"
 #include "../nclgl/MeshMaterial.h"
-const int LIGHT_NUM = 25;
+const int LIGHT_NUM = 2;
 const int POST_PASSES = 10;
 
 const int REFLECT_BLUR_PASSES = 2;
@@ -140,12 +140,17 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	marchShader = new Shader("TexturedVertex.glsl",
 		"raymarchfrag.glsl");
 
+	shadowShader = new Shader("deferredShadowVert.glsl",
+		"deferredShadowFrag.glsl",
+		"deferredShadowGeom.glsl"		);
+
 	if (!sceneShader->LoadSuccess()			|| !pointlightShader->LoadSuccess()
 		|| !combineShader->LoadSuccess()	|| !skyboxShader->LoadSuccess()
 		|| !alphaShader->LoadSuccess()		|| !heightShader->LoadSuccess()
 		|| !meshshader->LoadSuccess()		|| !endshader->LoadSuccess()
 		|| !blurShader->LoadSuccess()		|| !sobelShader->LoadSuccess()
-		|| !animatedshader->LoadSuccess()	|| !marchShader->LoadSuccess()	) {
+		|| !animatedshader->LoadSuccess()	|| !marchShader->LoadSuccess()
+		|| !shadowShader->LoadSuccess()		) {
 		return;
 	}
 
@@ -179,28 +184,15 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	//}
 
 	for (int i = 0; i < LIGHT_NUM; i++) {
-		Vector3 newlocation = Vector3((rand() % (int)(0.7 * heightmapSize.x)) + (0.15 * heightmapSize.x), 0.0f, (rand() % (int)(0.7 * heightmapSize.z)) + (0.15 * heightmapSize.z));
+
+		Vector3 newlocation = Vector3(0.0f, 15.0f - i*30.0f, -10.0f);
 
 		Light& l = pointLights[i];
-		l.SetPosition(Vector3(newlocation.x, newlocation.y + 350, newlocation.z));
+		l.SetPosition(Vector3(newlocation.x, newlocation.y, newlocation.z));
 
 		l.SetColour(Vector4(0.5f + (float)(rand() / (float)RAND_MAX), 0.5f + (float)(rand() / (float)RAND_MAX), 0.5f + (float)(rand() / (float)RAND_MAX), 200000));
-		l.SetRadius(1500.0f + (rand() % 300));
+		l.SetRadius(50.0f + (rand() % 30));
 
-
-		//SceneNode* treepos = new SceneNode();
-		//treepos->SetTransform(Matrix4::Translation(newlocation));
-		//
-		//SceneNode* treenode = new SceneNode();
-		//treenode->SetColour(Vector4(1.0f, 1.0f, 1.0f, 0.9f));
-		//treenode->SetModelScale(Vector3(40.0f, 55.0f, 40.0f));
-		//treenode->SetBoundingRadius(1000.0f);
-		//treenode->SetMesh(tree);
-		//treenode->SetTexture(glassTex);
-		//
-		//treepos->AddChild(treenode);
-		//
-		//root->AddChild(treepos);
 	}
 
 	//SceneNode* statue = new SceneNode();
@@ -344,33 +336,33 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	shadowProj = Matrix4::Perspective(1, 100, 1, 90);
 	
 	for (int i = 0; i < LIGHT_NUM; i++) {
-
+	
 		GLuint shadowCubeMap;
 		glGenTextures(1, &shadowCubeMap);
 		depthCubemap.emplace_back(shadowCubeMap);
-
+	
 		GLuint shadowFBO;
 		glGenFramebuffers(1, &shadowFBO);
 		depthMapFBO.emplace_back(shadowFBO);
-
+	
 		glBindTexture(GL_TEXTURE_CUBE_MAP, depthCubemap[i]);
-
+		
 		for (unsigned int i = 0; i < 6; ++i) {
 			glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_DEPTH_COMPONENT, SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
-
+		
 			glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 			glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 			glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 			glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 			glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 		}
-
+		
 		glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO[i]);
 		glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, depthCubemap[i], 0);
 		glDrawBuffer(GL_NONE);
 		glReadBuffer(GL_NONE);
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
+		
 		vector<Matrix4> newLightTransforms;
 		// In order: X_pox, X_neg, Y_pos, Y_neg, Z_pos, Z_neg
 		newLightTransforms.push_back( shadowProj * Matrix4::BuildViewMatrix( pointLights[i].GetPosition(), Vector3(1, 0, 0)));
@@ -379,8 +371,10 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 		newLightTransforms.push_back( shadowProj * Matrix4::BuildViewMatrix( pointLights[i].GetPosition(), Vector3(0, -1, 0)));
 		newLightTransforms.push_back( shadowProj * Matrix4::BuildViewMatrix( pointLights[i].GetPosition(), Vector3(0, 0, 1)));
 		newLightTransforms.push_back( shadowProj * Matrix4::BuildViewMatrix( pointLights[i].GetPosition(), Vector3(0, 0, -1)));
-
+		
 		shadowTransforms.push_back(newLightTransforms);
+		
+		glBindTexture(GL_TEXTURE_2D, 0);
 	}
 	
 //////
@@ -738,10 +732,40 @@ void Renderer::DrawAlphaNode(SceneNode* n) {
 	}
 }
 
+void Renderer::FillShadowMaps()
+{
+	
+
+	for (int i = 0; i < LIGHT_NUM; i++) {
+
+		glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO[i]);
+
+		glClear(GL_DEPTH_BUFFER_BIT);
+
+		glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
+
+		glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+
+		BindShader(shadowShader);
+
+		glUniformMatrix4fv(glGetUniformLocation(marchShader->GetProgram(), "shadowMatrices"), shadowTransforms[i].size(), false, (float*)shadowTransforms[i].data());
+
+		DrawNodesSolid();
+	}
+
+	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+	glViewport(0, 0, width, height);
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+}
+
 void Renderer::RenderScene() {
 	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 	BuildNodeLists(root);
 	SortNodeLists();
+
+	FillShadowMaps();
 
 	FillBuffers();
 	DrawPointLights();
@@ -781,6 +805,10 @@ void Renderer::DrawSkybox() {
 
 	BindShader(skyboxShader);
 	UpdateShaderMatrices();
+
+	glUniform1i(glGetUniformLocation(marchShader->GetProgram(), "cubeTex"), 0);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, cubeMap);
 
 	quad->Draw();
 
