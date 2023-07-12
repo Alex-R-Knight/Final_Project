@@ -171,4 +171,12 @@ protected:
 	vector <SceneNode*> transparentNodeList;
 	vector <SceneNode*> nodeList;
 	vector <SceneNode*> animNodeList;
+
+
+	// Deferred shadowmapping
+	vector<GLuint> depthMapFBO;
+	vector<GLuint> depthCubemap;
+	Matrix4 shadowProj;
+
+	vector<vector<Matrix4>> shadowTransforms;
 };

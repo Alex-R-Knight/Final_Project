@@ -11,6 +11,9 @@ const int POST_PASSES = 10;
 
 const int REFLECT_BLUR_PASSES = 2;
 
+// Deferred shadowmapping
+const unsigned int SHADOW_WIDTH = 1024, SHADOW_HEIGHT = 1024;
+
 Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	sphere = Mesh::LoadFromMeshFile("Sphere.msh");
 	//cube = Mesh::LoadFromMeshFile("OffsetCubeY.msh");
@@ -336,6 +339,52 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	GeneratePositionTexture(debugStorageTex2);
 	GeneratePositionTexture(debugStorageTex3);
 
+////// Deferred shadowmapping
+
+	shadowProj = Matrix4::Perspective(1, 100, 1, 90);
+	
+	for (int i = 0; i < LIGHT_NUM; i++) {
+
+		GLuint shadowCubeMap;
+		glGenTextures(1, &shadowCubeMap);
+		depthCubemap.emplace_back(shadowCubeMap);
+
+		GLuint shadowFBO;
+		glGenFramebuffers(1, &shadowFBO);
+		depthMapFBO.emplace_back(shadowFBO);
+
+		glBindTexture(GL_TEXTURE_CUBE_MAP, depthCubemap[i]);
+
+		for (unsigned int i = 0; i < 6; ++i) {
+			glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_DEPTH_COMPONENT, SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+
+			glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+			glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+			glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+			glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+			glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+		}
+
+		glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO[i]);
+		glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, depthCubemap[i], 0);
+		glDrawBuffer(GL_NONE);
+		glReadBuffer(GL_NONE);
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+		vector<Matrix4> newLightTransforms;
+		// In order: X_pox, X_neg, Y_pos, Y_neg, Z_pos, Z_neg
+		newLightTransforms.push_back( shadowProj * Matrix4::BuildViewMatrix( pointLights[i].GetPosition(), Vector3(1, 0, 0)));
+		newLightTransforms.push_back( shadowProj * Matrix4::BuildViewMatrix( pointLights[i].GetPosition(), Vector3(-1, 0, 0)));
+		newLightTransforms.push_back( shadowProj * Matrix4::BuildViewMatrix( pointLights[i].GetPosition(), Vector3(0, 1, 0)));
+		newLightTransforms.push_back( shadowProj * Matrix4::BuildViewMatrix( pointLights[i].GetPosition(), Vector3(0, -1, 0)));
+		newLightTransforms.push_back( shadowProj * Matrix4::BuildViewMatrix( pointLights[i].GetPosition(), Vector3(0, 0, 1)));
+		newLightTransforms.push_back( shadowProj * Matrix4::BuildViewMatrix( pointLights[i].GetPosition(), Vector3(0, 0, -1)));
+
+		shadowTransforms.push_back(newLightTransforms);
+	}
+	
+//////
+
 	//First camera alpha FBO
 	glBindFramebuffer(GL_FRAMEBUFFER, alphaFBO);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, alphaColourTex, 0);
@@ -452,6 +501,11 @@ Renderer::~Renderer(void) {
 	glDeleteFramebuffers(1, &alphaFBO_2);
 	glDeleteFramebuffers(1, &bufferFBO);
 	glDeleteFramebuffers(1, &pointLightFBO);
+
+	for (int i = 0; i < LIGHT_NUM; i++)
+	{
+		glDeleteFramebuffers(1, &depthMapFBO[i]);
+	}
 }
 
 void Renderer::GenerateScreenTexture(GLuint& into, bool depth) {
