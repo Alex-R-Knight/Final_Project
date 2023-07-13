@@ -67,6 +67,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Shaders", "Shaders", "{E566
 		Shaders\deferredShadowFrag.glsl = Shaders\deferredShadowFrag.glsl
 		Shaders\deferredShadowVert.glsl = Shaders\deferredShadowVert.glsl
 		Shaders\EndBloomFragment.glsl = Shaders\EndBloomFragment.glsl
+		Shaders\FinalMixingFrag.glsl = Shaders\FinalMixingFrag.glsl
 		Shaders\geometry_test_1.glsl = Shaders\geometry_test_1.glsl
 		Shaders\GetBloomFragment.glsl = Shaders\GetBloomFragment.glsl
 		Shaders\MatrixVertex.glsl = Shaders\MatrixVertex.glsl

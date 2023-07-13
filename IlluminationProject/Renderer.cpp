@@ -129,7 +129,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 		"bufferIGNFragment.glsl");
 
 	endshader = new Shader("TexturedVertex.glsl",
-		"texturedfragment.glsl");
+		"FinalMixingFrag.glsl");
 
 	blurShader = new Shader("TexturedVertex.glsl",
 		"processfrag.glsl");
@@ -190,7 +190,8 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 		l.SetPosition(Vector3(newlocation.x, newlocation.y, newlocation.z));
 
 		l.SetColour(Vector4(0.5f + (float)(rand() / (float)RAND_MAX), 0.5f + (float)(rand() / (float)RAND_MAX), 0.5f + (float)(rand() / (float)RAND_MAX), 200000));
-		l.SetRadius(50.0f + (rand() % 30));
+		l.SetRadius(50.0f);
+		//l.SetRadius(50.0f + (rand() % 30));
 
 	}
 
@@ -798,11 +799,11 @@ void Renderer::RenderScene() {
 	FillBuffers();
 	DrawPointLights();
 
+	CombineBuffers();
+
 	// Raymarch
 	RaymarchReflection();
 	ReflectionBlurring();
-
-	CombineBuffers();
 
 	DrawAlphaMeshes();
 
@@ -978,17 +979,7 @@ void Renderer::CombineBuffers() {
 
 	glUniform1i(glGetUniformLocation(combineShader->GetProgram(), "specularLight"), 2);
 	glActiveTexture(GL_TEXTURE2);
-	glBindTexture(GL_TEXTURE_2D, lightSpecularTex);
-
-	glUniform1i(glGetUniformLocation(combineShader->GetProgram(), "rayMarchUV"), 3);
-	glActiveTexture(GL_TEXTURE3);
-	glBindTexture(GL_TEXTURE_2D, bufferUVTex);
-
-	glUniform1i(glGetUniformLocation(combineShader->GetProgram(), "reflectivity"), 4);
-	glActiveTexture(GL_TEXTURE4);
-	glBindTexture(GL_TEXTURE_2D, reflectionBufferTex);
-
-	
+	glBindTexture(GL_TEXTURE_2D, lightSpecularTex);	
 
 	quad->Draw();
 
@@ -1059,7 +1050,7 @@ void Renderer::RaymarchReflection()
 	//Reflected geometry colour
 	glUniform1i(glGetUniformLocation(marchShader->GetProgram(), "baseTexture"), 5);
 	glActiveTexture(GL_TEXTURE5);
-	glBindTexture(GL_TEXTURE_2D, bufferColourTex);
+	glBindTexture(GL_TEXTURE_2D, alphaColourTex);
 
 	Matrix4 tempProjMatrix = Matrix4::Perspective(1.0f, 1000.0f, (float)width / (float)height, 45.0f);
 	glUniformMatrix4fv(glGetUniformLocation(marchShader->GetProgram(), "lensProjection"), 1, false, tempProjMatrix.values);
@@ -1143,28 +1134,18 @@ void Renderer::DrawToScreen() {
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, alphaColourTex);
 
-	//stochastic test
-	//glBindTexture(GL_TEXTURE_2D, bufferStochasticNormalTex);
+	glUniform1i(glGetUniformLocation(endshader->GetProgram(), "rayMarchUV"), 1);
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, bufferUVTex);
 
-	//UV test
-	//glBindTexture(GL_TEXTURE_2D, bufferUVTex);
-
-	//Normal test
-	//glBindTexture(GL_TEXTURE_2D, bufferNormalTex);
+	glUniform1i(glGetUniformLocation(endshader->GetProgram(), "reflectivity"), 2);
+	glActiveTexture(GL_TEXTURE2);
+	glBindTexture(GL_TEXTURE_2D, reflectionBufferTex);
 	
 	
-	if (twoCameras == false) {
-		quad->Draw();
-	}
-	else {
-		quad_L->Draw();
 
-		glUniform1i(glGetUniformLocation(endshader->GetProgram(), "diffuseTex"), 1);
-		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, alphaColourTex_2);
-
-		quad_R->Draw();
-	}
+	quad->Draw();
+	
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glEnable(GL_DEPTH_TEST);
