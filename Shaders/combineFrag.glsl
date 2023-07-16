@@ -54,6 +54,8 @@ uniform sampler2D diffuseTex;
 uniform sampler2D diffuseLight;
 uniform sampler2D specularLight;
 
+uniform sampler2D illuminationTex;
+
 in Vertex{
 	vec2 texCoord;
 } IN;
@@ -64,9 +66,12 @@ void main(void) {
 	vec3 diffuse = texture(diffuseTex, IN.texCoord).xyz;
 	vec3 light = texture(diffuseLight, IN.texCoord).xyz;
 	vec3 specular = texture(specularLight, IN.texCoord).xyz;
+
+	vec3 indirect = texture(illuminationTex, IN.texCoord).xyz;
 	
 	fragColour.xyz = diffuse * 0.15; // ambient
 	fragColour.xyz += diffuse * light; // lambert
+	fragColour.xyz += indirect * 0.5; // indirect
 	fragColour.xyz += specular; // Specular
 
 	if (texture(diffuseTex, IN.texCoord).a != 1.0) {

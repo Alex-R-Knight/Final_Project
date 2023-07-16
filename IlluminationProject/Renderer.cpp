@@ -11,6 +11,8 @@ const int POST_PASSES = 10;
 
 const int REFLECT_BLUR_PASSES = 2;
 
+const int ILLUMINATION_BLUR_PASSES = 3;
+
 // Deferred shadowmapping
 const unsigned int SHADOWSIZE = 2048;
 
@@ -137,8 +139,11 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	sobelShader = new Shader("TexturedVertex.glsl",
 		"processfrag_sobel_edge.glsl");
 
-	marchShader = new Shader("TexturedVertex.glsl",
-		"raymarchfrag.glsl");
+	reflectionShader = new Shader("TexturedVertex.glsl",
+		"reflectionRayFrag.glsl");
+
+	illuminationShader = new Shader("TexturedVertex.glsl",
+		"lightingRayFrag.glsl");
 
 	shadowShader = new Shader("deferredShadowVert.glsl",
 		"deferredShadowFrag.glsl");
@@ -148,8 +153,8 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 		|| !alphaShader->LoadSuccess()		|| !heightShader->LoadSuccess()
 		|| !meshshader->LoadSuccess()		|| !endshader->LoadSuccess()
 		|| !blurShader->LoadSuccess()		|| !sobelShader->LoadSuccess()
-		|| !animatedshader->LoadSuccess()	|| !marchShader->LoadSuccess()
-		|| !shadowShader->LoadSuccess()		) {
+		|| !animatedshader->LoadSuccess()	|| !reflectionShader->LoadSuccess()
+		|| !shadowShader->LoadSuccess()		|| !illuminationShader->LoadSuccess()	) {
 		return;
 	}
 
@@ -300,7 +305,9 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	glGenFramebuffers(1, &pointLightFBO);
 	glGenFramebuffers(1, &processFBO);
 
-	glGenFramebuffers(1, &UVFBO);
+	glGenFramebuffers(1, &reflectionFBO);
+
+	glGenFramebuffers(1, &illuminationFBO);
 
 	GLenum buffers[5] = {
 		GL_COLOR_ATTACHMENT0 ,
@@ -324,7 +331,9 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	GenerateScreenTexture(lightDiffuseTex);
 	GenerateScreenTexture(lightSpecularTex);
 
-	GenerateScreenTexture(bufferUVTex);
+	GenerateScreenTexture(reflectionStorageTex);
+
+	GenerateScreenTexture(illuminationStorageTex);
 
 	GeneratePositionTexture(bufferViewSpacePosTex);
 	GeneratePositionTexture(debugStorageTex1);
@@ -437,14 +446,23 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 		return;
 	}
 
-	//Preparing UV FBO
-	glBindFramebuffer(GL_FRAMEBUFFER, UVFBO);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, bufferUVTex, 0);
+	//Preparing reflection FBO
+	glBindFramebuffer(GL_FRAMEBUFFER, reflectionFBO);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, reflectionStorageTex, 0);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, bufferViewSpacePosTex, 0);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, debugStorageTex1, 0);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT3, GL_TEXTURE_2D, debugStorageTex2, 0);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT4, GL_TEXTURE_2D, debugStorageTex3, 0);
 	glDrawBuffers(5, buffers);
+
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+		return;
+	}
+
+	//Preparing ilumination FBO
+	glBindFramebuffer(GL_FRAMEBUFFER, illuminationFBO);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, illuminationStorageTex, 0);
+	glDrawBuffers(1, buffers);
 
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
 		return;
@@ -476,7 +494,9 @@ Renderer::~Renderer(void) {
 	delete blurShader;
 	delete sobelShader;
 	delete animatedshader;
-	delete marchShader;
+	delete reflectionShader;
+	delete illuminationShader;
+	delete shadowShader;
 
 	delete heightMap;
 	delete camera;
@@ -510,6 +530,9 @@ Renderer::~Renderer(void) {
 	glDeleteFramebuffers(1, &alphaFBO_2);
 	glDeleteFramebuffers(1, &bufferFBO);
 	glDeleteFramebuffers(1, &pointLightFBO);
+
+	glDeleteFramebuffers(1, &reflectionFBO);
+	glDeleteFramebuffers(1, &illuminationFBO);
 
 
 	for (const auto& i : shadowFBO)
@@ -799,9 +822,13 @@ void Renderer::RenderScene() {
 	FillBuffers();
 	DrawPointLights();
 
+	// Raymarch lighting
+	RaymarchLighting();
+	LightingBlurring();
+
 	CombineBuffers();
 
-	// Raymarch
+	// Raymarch reflections
 	RaymarchReflection();
 	ReflectionBlurring();
 
@@ -981,6 +1008,11 @@ void Renderer::CombineBuffers() {
 	glActiveTexture(GL_TEXTURE2);
 	glBindTexture(GL_TEXTURE_2D, lightSpecularTex);	
 
+	glUniform1i(glGetUniformLocation(combineShader->GetProgram(), "illuminationTex"), 3);
+	glActiveTexture(GL_TEXTURE3);
+	glBindTexture(GL_TEXTURE_2D, illuminationStorageTex);
+	
+
 	quad->Draw();
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -1006,10 +1038,10 @@ void Renderer::DrawAlphaMeshes() {
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-void Renderer::RaymarchReflection()
+void Renderer::RaymarchLighting()
 {
-	glBindFramebuffer(GL_FRAMEBUFFER, UVFBO);
-	BindShader(marchShader);
+	glBindFramebuffer(GL_FRAMEBUFFER, illuminationFBO);
+	BindShader(illuminationShader);
 
 	glClearColor(0, 0, 0, 1);
 	glClear(GL_COLOR_BUFFER_BIT);
@@ -1022,54 +1054,139 @@ void Renderer::RaymarchReflection()
 
 	glDisable(GL_DEPTH_TEST);
 
-	//glUniform1i(glGetUniformLocation(marchShader->GetProgram(), "positionTexture"), 0);
-	//glActiveTexture(GL_TEXTURE0);
-	//glBindTexture(GL_TEXTURE_2D, bufferViewSpacePosTex);
-
-	glUniform1i(glGetUniformLocation(marchShader->GetProgram(), "depthTex"), 0);
+	glUniform1i(glGetUniformLocation(illuminationShader->GetProgram(), "depthTex"), 0);
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, bufferDepthTex);
 
-	glUniform1i(glGetUniformLocation(marchShader->GetProgram(), "hemisphereTexture"), 1);
+	glUniform1i(glGetUniformLocation(illuminationShader->GetProgram(), "hemisphereTexture"), 1);
 	glActiveTexture(GL_TEXTURE1);
 	glBindTexture(GL_TEXTURE_2D, bufferStochasticNormalTex);
 
-	glUniform1i(glGetUniformLocation(marchShader->GetProgram(), "normalTexture"), 2);
+	//Reflected geometry colour
+	glUniform1i(glGetUniformLocation(illuminationShader->GetProgram(), "baseTexture"), 2);
+	glActiveTexture(GL_TEXTURE2);
+	glBindTexture(GL_TEXTURE_2D, alphaColourTex);
+
+
+	Matrix4 tempProjMatrix = Matrix4::Perspective(1.0f, 1000.0f, (float)width / (float)height, 45.0f);
+	glUniformMatrix4fv(glGetUniformLocation(illuminationShader->GetProgram(), "lensProjection"), 1, false, tempProjMatrix.values);
+
+	Matrix4 invProj = tempProjMatrix.Inverse();
+	glUniformMatrix4fv(glGetUniformLocation(illuminationShader->GetProgram(), "inverseProjection"), 1, false, invProj.values);
+
+	Matrix4 tempViewMatrix = activeCamera->BuildViewMatrix();
+	glUniformMatrix4fv(glGetUniformLocation(illuminationShader->GetProgram(), "NormalViewMatrix"), 1, false, tempViewMatrix.values);
+
+	Matrix4 inverseTempViewMatrix = tempViewMatrix.Inverse();
+	glUniformMatrix4fv(glGetUniformLocation(illuminationShader->GetProgram(), "InverseViewMatrix"), 1, false, inverseTempViewMatrix.values);
+
+
+	// Camera position
+	glUniform3fv(glGetUniformLocation(illuminationShader->GetProgram(), "cameraPos"), 1, (float*)&activeCamera->GetPosition());
+
+
+	quad->Draw();
+
+	glClearColor(0.2f, 0.2f, 0.2f, 1);
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glEnable(GL_DEPTH_TEST);
+}
+
+void Renderer::LightingBlurring()
+{
+	glBindFramebuffer(GL_FRAMEBUFFER, processFBO);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, processColourTex, 0);
+	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+	BindShader(blurShader);
+
+	modelMatrix.ToIdentity();
+	viewMatrix.ToIdentity();
+	projMatrix.ToIdentity();
+	UpdateShaderMatrices();
+
+	glDisable(GL_DEPTH_TEST);
+
+	glActiveTexture(GL_TEXTURE0);
+	glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "sceneTex"), 0);
+	for (int i = 0; i < ILLUMINATION_BLUR_PASSES; ++i) {
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, processColourTex, 0);
+		glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "isVertical"), 0);
+
+		glBindTexture(GL_TEXTURE_2D, illuminationStorageTex);
+		quad->Draw();
+		//Now to swap the colour buffers , and do the second blur pass
+		glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "isVertical"), 1);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, illuminationStorageTex, 0);
+		glBindTexture(GL_TEXTURE_2D, processColourTex);
+		quad->Draw();
+	}
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glEnable(GL_DEPTH_TEST);
+}
+
+void Renderer::RaymarchReflection()
+{
+	glBindFramebuffer(GL_FRAMEBUFFER, reflectionFBO);
+	BindShader(reflectionShader);
+
+	glClearColor(0, 0, 0, 1);
+	glClear(GL_COLOR_BUFFER_BIT);
+
+	modelMatrix.ToIdentity();
+	viewMatrix.ToIdentity();
+	projMatrix.ToIdentity();
+
+	UpdateShaderMatrices();
+
+	glDisable(GL_DEPTH_TEST);
+
+	//glUniform1i(glGetUniformLocation(reflectionShader->GetProgram(), "positionTexture"), 0);
+	//glActiveTexture(GL_TEXTURE0);
+	//glBindTexture(GL_TEXTURE_2D, bufferViewSpacePosTex);
+
+	glUniform1i(glGetUniformLocation(reflectionShader->GetProgram(), "depthTex"), 0);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, bufferDepthTex);
+
+	glUniform1i(glGetUniformLocation(reflectionShader->GetProgram(), "hemisphereTexture"), 1);
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, bufferStochasticNormalTex);
+
+	glUniform1i(glGetUniformLocation(reflectionShader->GetProgram(), "normalTexture"), 2);
 	glActiveTexture(GL_TEXTURE2);
 	glBindTexture(GL_TEXTURE_2D, bufferNormalTex);
 
-	glUniform1i(glGetUniformLocation(marchShader->GetProgram(), "reflectionTexture"), 3);
+	glUniform1i(glGetUniformLocation(reflectionShader->GetProgram(), "reflectionTexture"), 3);
 	glActiveTexture(GL_TEXTURE3);
 	glBindTexture(GL_TEXTURE_2D, reflectionBufferTex);
 
 	// Skybox
-	glUniform1i(glGetUniformLocation(marchShader->GetProgram(), "cubeTex"), 4);
+	glUniform1i(glGetUniformLocation(reflectionShader->GetProgram(), "cubeTex"), 4);
 	glActiveTexture(GL_TEXTURE4);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, cubeMap);
 
 	//Reflected geometry colour
-	glUniform1i(glGetUniformLocation(marchShader->GetProgram(), "baseTexture"), 5);
+	glUniform1i(glGetUniformLocation(reflectionShader->GetProgram(), "baseTexture"), 5);
 	glActiveTexture(GL_TEXTURE5);
 	glBindTexture(GL_TEXTURE_2D, alphaColourTex);
 
 	Matrix4 tempProjMatrix = Matrix4::Perspective(1.0f, 1000.0f, (float)width / (float)height, 45.0f);
-	glUniformMatrix4fv(glGetUniformLocation(marchShader->GetProgram(), "lensProjection"), 1, false, tempProjMatrix.values);
+	glUniformMatrix4fv(glGetUniformLocation(reflectionShader->GetProgram(), "lensProjection"), 1, false, tempProjMatrix.values);
 
 	Matrix4 invProj = tempProjMatrix.Inverse();
-	glUniformMatrix4fv(glGetUniformLocation(marchShader->GetProgram(), "inverseProjection"), 1, false, invProj.values);
+	glUniformMatrix4fv(glGetUniformLocation(reflectionShader->GetProgram(), "inverseProjection"), 1, false, invProj.values);
 
 	Matrix4 tempViewMatrix = activeCamera->BuildViewMatrix();
-	glUniformMatrix4fv(glGetUniformLocation(marchShader->GetProgram(), "NormalViewMatrix"), 1, false, tempViewMatrix.values);
+	glUniformMatrix4fv(glGetUniformLocation(reflectionShader->GetProgram(), "NormalViewMatrix"), 1, false, tempViewMatrix.values);
 
 	Matrix4 inverseTempViewMatrix = tempViewMatrix.Inverse();
-	glUniformMatrix4fv(glGetUniformLocation(marchShader->GetProgram(), "InverseViewMatrix"), 1, false, inverseTempViewMatrix.values);
+	glUniformMatrix4fv(glGetUniformLocation(reflectionShader->GetProgram(), "InverseViewMatrix"), 1, false, inverseTempViewMatrix.values);
 	
 
 	// Camera position
-	glUniform3fv(glGetUniformLocation(marchShader->GetProgram(), "cameraPos"), 1, (float*)&activeCamera->GetPosition());
-	
+	glUniform3fv(glGetUniformLocation(reflectionShader->GetProgram(), "cameraPos"), 1, (float*)&activeCamera->GetPosition());
 
-	glUniform2f(glGetUniformLocation(marchShader->GetProgram(), "pixelSize"), 1.0f / width, 1.0f / height);
 
 	quad->Draw();
 
@@ -1099,11 +1216,11 @@ void Renderer::ReflectionBlurring()
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, processColourTex, 0);
 		glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "isVertical"), 0);
 
-		glBindTexture(GL_TEXTURE_2D, bufferUVTex);
+		glBindTexture(GL_TEXTURE_2D, reflectionStorageTex);
 		quad->Draw();
 		//Now to swap the colour buffers , and do the second blur pass
 		glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "isVertical"), 1);
-		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, bufferUVTex, 0);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, reflectionStorageTex, 0);
 		glBindTexture(GL_TEXTURE_2D, processColourTex);
 		quad->Draw();
 	}
@@ -1136,7 +1253,7 @@ void Renderer::DrawToScreen() {
 
 	glUniform1i(glGetUniformLocation(endshader->GetProgram(), "rayMarchUV"), 1);
 	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, bufferUVTex);
+	glBindTexture(GL_TEXTURE_2D, reflectionStorageTex);
 
 	glUniform1i(glGetUniformLocation(endshader->GetProgram(), "reflectivity"), 2);
 	glActiveTexture(GL_TEXTURE2);

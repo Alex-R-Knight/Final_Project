@@ -54,11 +54,16 @@ protected:
 
 	void DrawAlphaMeshes(); //Draw transparent meshes after
 
+	// Screenspace reflections
 	void RaymarchReflection();
 	void ReflectionBlurring();
 
 	//Deferred shadows
 	void FillShadowMaps();
+
+	// Screenspace illumination
+	void RaymarchLighting();
+	void LightingBlurring();
 
 
 	void BuildNodeLists(SceneNode* from);
@@ -92,8 +97,10 @@ protected:
 	Shader* blurShader; // for post-processing blur
 	Shader* sobelShader; // for post-processing sobel
 
-	//// Raymarch Shader ////
-	Shader* marchShader;
+	//// Raymarch Shaders ////
+	Shader* reflectionShader;
+
+	Shader* illuminationShader;
 
 	// Deferred Shadows
 	Shader* shadowShader;
@@ -124,11 +131,16 @@ protected:
 	GLuint reflectionBufferTex;
 
 
-	// Global illumination UV buffer
-	GLuint UVFBO;			// FBO for UV storage
-	GLuint bufferUVTex;			// UV goes here
+	// Reflection buffer
+	GLuint reflectionFBO;			// FBO for reflection storage
+	GLuint reflectionStorageTex;	// Reflection tex goes here
+
+	// Illumination buffer
+	GLuint illuminationFBO;			// FBO for illumination storage
+	GLuint illuminationStorageTex;	// Illumination tex goes here
+
 	// Debug values in these
-	GLuint bufferViewSpacePosTex; // Viewspace position goes here
+	GLuint bufferViewSpacePosTex;	// Viewspace position goes here
 	GLuint debugStorageTex1;
 	GLuint debugStorageTex2;
 	GLuint debugStorageTex3;
