@@ -198,7 +198,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 
 	for (int i = 0; i < LIGHT_NUM; i++) {
 
-		Vector3 newlocation = Vector3(10.0f - i * 10.0f, 5.0f, -10.0f);
+		Vector3 newlocation = Vector3(30.0f - i * 50.0f, 5.0f, 0.0f);
 
 		Light& l = pointLights[i];
 		l.SetPosition(Vector3(newlocation.x, newlocation.y, newlocation.z));
@@ -349,7 +349,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	GenerateScreenTexture(SSAOTex);
 
 	GeneratePositionTexture(bufferViewSpacePosTex);
-	GeneratePositionTexture(debugStorageTex1);
+	GenerateScreenTexture(debugStorageTex1);
 	GeneratePositionTexture(debugStorageTex2);
 	GeneratePositionTexture(debugStorageTex3);
 
@@ -464,8 +464,9 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	//First camera alpha FBO
 	glBindFramebuffer(GL_FRAMEBUFFER, alphaFBO);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, alphaColourTex, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, debugStorageTex1, 0);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, alphaDepthTex, 0);
-	glDrawBuffers(1, buffers);
+	glDrawBuffers(2, buffers);
 
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
 		return;
@@ -507,11 +508,11 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	//Preparing reflection FBO
 	glBindFramebuffer(GL_FRAMEBUFFER, reflectionFBO);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, reflectionStorageTex, 0);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, bufferViewSpacePosTex, 0);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, debugStorageTex1, 0);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT3, GL_TEXTURE_2D, debugStorageTex2, 0);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT4, GL_TEXTURE_2D, debugStorageTex3, 0);
-	glDrawBuffers(5, buffers);
+	//glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, bufferViewSpacePosTex, 0);
+	//glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, debugStorageTex1, 0);
+	//glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT3, GL_TEXTURE_2D, debugStorageTex2, 0);
+	//glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT4, GL_TEXTURE_2D, debugStorageTex3, 0);
+	glDrawBuffers(1, buffers);
 
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
 		return;
@@ -1349,6 +1350,8 @@ void Renderer::SSAOProcess()
 	Matrix4 invProj = tempProjMatrix.Inverse();
 	glUniformMatrix4fv(glGetUniformLocation(SSAOShader->GetProgram(), "inverseProjection"), 1, false, invProj.values);
 
+	Matrix4 tempViewMatrix = activeCamera->BuildViewMatrix();
+	glUniformMatrix4fv(glGetUniformLocation(SSAOShader->GetProgram(), "NormalViewMatrix"), 1, false, tempViewMatrix.values);
 
 	// Passing vec3 array values
 	vector<float> flatArray;

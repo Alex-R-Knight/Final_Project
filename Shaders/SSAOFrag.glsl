@@ -15,9 +15,11 @@ uniform sampler2D noiseTex;
 
 uniform vec3 samples[32];
 
+uniform mat4 NormalViewMatrix;
+
 int kernelSize = 32;
+float radius = 2.0f;
 //float radius = 0.5f;
-float radius = 0.5f;
 float bias = 0.0125;
 
 
@@ -49,6 +51,8 @@ void main ( void ) {
 
 
 	vec3 normal = texture(normalTex, IN.texCoord).xyz * 2.0 - 1.0;
+	normal = mat3(NormalViewMatrix) * normal;
+
 	vec3 noise = texture(noiseTex, IN.texCoord * noiseScale).xyz;
 	
 	// Toggle lines to use noise
