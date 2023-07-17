@@ -16,7 +16,7 @@ const int ILLUMINATION_BLUR_PASSES = 6;
 const int SSAO_BLUR_PASSES = 2;
 
 // MUST BE CHANGED IN "SSAOFrag.glsl" AS WELL
-const int SSAO_KERNEL_COUNT = 32;
+const int SSAO_KERNEL_COUNT = 16;
 
 // Deferred shadowmapping
 const unsigned int SHADOWSIZE = 2048;

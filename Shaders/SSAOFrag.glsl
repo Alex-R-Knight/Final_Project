@@ -13,11 +13,12 @@ uniform sampler2D depthTex;
 uniform sampler2D normalTex;
 uniform sampler2D noiseTex;
 
-uniform vec3 samples[32];
-
 uniform mat4 NormalViewMatrix;
 
-int kernelSize = 32;
+// Must change in renderer.cpp as well
+int kernelSize = 16;
+uniform vec3 samples[16];
+
 float radius = 2.0f;
 //float radius = 0.5f;
 float bias = 0.0125;
