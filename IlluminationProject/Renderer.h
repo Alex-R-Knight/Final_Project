@@ -65,6 +65,10 @@ protected:
 	void RaymarchLighting();
 	void LightingBlurring();
 
+	// Screen Space Ambient Occlusion
+	void SSAOProcess();
+	void SSAOBlurring();
+
 
 	void BuildNodeLists(SceneNode* from);
 	void SortNodeLists();
@@ -105,6 +109,9 @@ protected:
 	// Deferred Shadows
 	Shader* shadowShader;
 
+	// SSAO Shader
+	Shader* SSAOShader;
+
 	GLuint processFBO; //The FBO for post processing
 	GLuint processColourTex; //The texture for post processing
 
@@ -129,6 +136,12 @@ protected:
 	GLuint bufferStochasticNormalTex; // Stochastic normals go here
 	// Reflection part
 	GLuint reflectionBufferTex;
+
+	// SSAO Part
+	GLuint SSAOFBO;
+	GLuint SSAOTex;
+	// noise storage tex
+	GLuint SSAONoiseTex;
 
 
 	// Reflection buffer
@@ -196,4 +209,8 @@ protected:
 	vector<vector<GLuint>> shadowMaps;
 	Matrix4 shadowProj;
 	vector<vector<Matrix4>> shadowTransforms;
+
+	// SSAO Storage
+	vector<Vector3> SSAOKernels;
+	vector<Vector3> SSAONoise;
 };

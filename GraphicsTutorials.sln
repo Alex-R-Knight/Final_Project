@@ -94,6 +94,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Shaders", "Shaders", "{E566
 		Shaders\SkinningVertex_Deferred.glsl = Shaders\SkinningVertex_Deferred.glsl
 		Shaders\skyboxFragment.glsl = Shaders\skyboxFragment.glsl
 		Shaders\skyboxVertex.glsl = Shaders\skyboxVertex.glsl
+		Shaders\SSAOFrag.glsl = Shaders\SSAOFrag.glsl
 		Shaders\StencilFragment.glsl = Shaders\StencilFragment.glsl
 		Shaders\TexturedFragment.glsl = Shaders\TexturedFragment.glsl
 		Shaders\TexturedVertex.glsl = Shaders\TexturedVertex.glsl

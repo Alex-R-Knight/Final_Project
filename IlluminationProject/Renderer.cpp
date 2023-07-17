@@ -11,7 +11,12 @@ const int POST_PASSES = 10;
 
 const int REFLECT_BLUR_PASSES = 2;
 
-const int ILLUMINATION_BLUR_PASSES = 3;
+const int ILLUMINATION_BLUR_PASSES = 6;
+
+const int SSAO_BLUR_PASSES = 2;
+
+// MUST BE CHANGED IN "SSAOFrag.glsl" AS WELL
+const int SSAO_KERNEL_COUNT = 32;
 
 // Deferred shadowmapping
 const unsigned int SHADOWSIZE = 2048;
@@ -148,13 +153,17 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	shadowShader = new Shader("deferredShadowVert.glsl",
 		"deferredShadowFrag.glsl");
 
+	SSAOShader = new Shader("TexturedVertex.glsl",
+		"SSAOFrag.glsl");
+
 	if (!sceneShader->LoadSuccess()			|| !pointlightShader->LoadSuccess()
 		|| !combineShader->LoadSuccess()	|| !skyboxShader->LoadSuccess()
 		|| !alphaShader->LoadSuccess()		|| !heightShader->LoadSuccess()
 		|| !meshshader->LoadSuccess()		|| !endshader->LoadSuccess()
 		|| !blurShader->LoadSuccess()		|| !sobelShader->LoadSuccess()
 		|| !animatedshader->LoadSuccess()	|| !reflectionShader->LoadSuccess()
-		|| !shadowShader->LoadSuccess()		|| !illuminationShader->LoadSuccess()	) {
+		|| !shadowShader->LoadSuccess()		|| !illuminationShader->LoadSuccess()
+		|| !SSAOShader->LoadSuccess()		) {
 		return;
 	}
 
@@ -307,6 +316,8 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 
 	glGenFramebuffers(1, &reflectionFBO);
 
+	glGenFramebuffers(1, &SSAOFBO);
+
 	glGenFramebuffers(1, &illuminationFBO);
 
 	GLenum buffers[5] = {
@@ -334,6 +345,8 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	GenerateScreenTexture(reflectionStorageTex);
 
 	GenerateScreenTexture(illuminationStorageTex);
+
+	GenerateScreenTexture(SSAOTex);
 
 	GeneratePositionTexture(bufferViewSpacePosTex);
 	GeneratePositionTexture(debugStorageTex1);
@@ -403,6 +416,51 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	
 //////
 
+
+////// SSAO Prep
+
+	// Kernel generation
+	for (int i = 0; i < SSAO_KERNEL_COUNT; i++)
+	{
+		Vector3 kernel(
+			(float)(rand() / (float)RAND_MAX) * 2.0 - 1.0,
+			(float)(rand() / (float)RAND_MAX) * 2.0 - 1.0,
+			(float)(rand() / (float)RAND_MAX)
+		);
+		kernel = kernel.Normalised();
+
+		float scale = (float)i / SSAO_KERNEL_COUNT;
+
+		scale = 0.1f + (scale * scale) * 0.9f;
+
+		kernel = kernel * scale;
+
+		SSAOKernels.push_back(kernel);
+	}
+
+	// Noise generation
+	for (int i = 0; i < 16; i++)
+	{
+		Vector3 noise(
+			(float)(rand() / (float)RAND_MAX) * 2.0 - 1.0,
+			(float)(rand() / (float)RAND_MAX) * 2.0 - 1.0,
+			0.0f
+		);
+		SSAONoise.push_back(noise);
+	}
+
+	// Noise texture creation
+	glGenTextures(1, &SSAONoiseTex);
+	glBindTexture(GL_TEXTURE_2D, SSAONoiseTex);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, 4, 4, 0, GL_RGB, GL_FLOAT, &SSAONoise[0]);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+/////
+
+
 	//First camera alpha FBO
 	glBindFramebuffer(GL_FRAMEBUFFER, alphaFBO);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, alphaColourTex, 0);
@@ -468,6 +526,18 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 		return;
 	}
 
+	//Preparing SSAO FBO
+	//Preparing ilumination FBO
+	glBindFramebuffer(GL_FRAMEBUFFER, SSAOFBO);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, SSAOTex, 0);
+	glDrawBuffers(1, buffers);
+
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+		return;
+	}
+
+
+
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
@@ -497,6 +567,7 @@ Renderer::~Renderer(void) {
 	delete reflectionShader;
 	delete illuminationShader;
 	delete shadowShader;
+	delete SSAOShader;
 
 	delete heightMap;
 	delete camera;
@@ -533,6 +604,8 @@ Renderer::~Renderer(void) {
 
 	glDeleteFramebuffers(1, &reflectionFBO);
 	glDeleteFramebuffers(1, &illuminationFBO);
+
+	glDeleteFramebuffers(1, &SSAOFBO);
 
 
 	for (const auto& i : shadowFBO)
@@ -822,6 +895,10 @@ void Renderer::RenderScene() {
 	FillBuffers();
 	DrawPointLights();
 
+	// SSAO
+	SSAOProcess();
+	SSAOBlurring();
+
 	// Raymarch lighting
 	RaymarchLighting();
 	LightingBlurring();
@@ -859,6 +936,8 @@ void Renderer::DrawSkybox() {
 	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 	glDepthMask(GL_FALSE);
 
+	glClearColor(0, 0, 0, 1);
+
 	BindShader(skyboxShader);
 	UpdateShaderMatrices();
 
@@ -867,6 +946,8 @@ void Renderer::DrawSkybox() {
 	glBindTexture(GL_TEXTURE_CUBE_MAP, cubeMap);
 
 	quad->Draw();
+
+	glClearColor(0.2f, 0.2f, 0.2f, 1);
 
 	glDepthMask(GL_TRUE);
 }
@@ -885,8 +966,10 @@ void Renderer::FillBuffers() {
 	
 	UpdateShaderMatrices();
 
+	glClearColor(0, 0, 0, 1);
 	DrawSkybox();
-	
+	glClearColor(0.2f, 0.2f, 0.2f, 1);
+
 	//render meshes
 
 	BindShader(meshshader);
@@ -1011,6 +1094,10 @@ void Renderer::CombineBuffers() {
 	glUniform1i(glGetUniformLocation(combineShader->GetProgram(), "illuminationTex"), 3);
 	glActiveTexture(GL_TEXTURE3);
 	glBindTexture(GL_TEXTURE_2D, illuminationStorageTex);
+
+	glUniform1i(glGetUniformLocation(combineShader->GetProgram(), "SSAOTex"), 4);
+	glActiveTexture(GL_TEXTURE4);
+	glBindTexture(GL_TEXTURE_2D, SSAOTex);
 	
 
 	quad->Draw();
@@ -1221,6 +1308,90 @@ void Renderer::ReflectionBlurring()
 		//Now to swap the colour buffers , and do the second blur pass
 		glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "isVertical"), 1);
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, reflectionStorageTex, 0);
+		glBindTexture(GL_TEXTURE_2D, processColourTex);
+		quad->Draw();
+	}
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glEnable(GL_DEPTH_TEST);
+}
+
+void Renderer::SSAOProcess()
+{
+	glBindFramebuffer(GL_FRAMEBUFFER, SSAOFBO);
+	BindShader(SSAOShader);
+
+	glClear(GL_COLOR_BUFFER_BIT);
+
+	modelMatrix.ToIdentity();
+	viewMatrix.ToIdentity();
+	projMatrix.ToIdentity();
+
+	UpdateShaderMatrices();
+
+	glDisable(GL_DEPTH_TEST);
+
+	glUniform1i(glGetUniformLocation(SSAOShader->GetProgram(), "depthTex"), 0);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, bufferDepthTex);
+
+	glUniform1i(glGetUniformLocation(SSAOShader->GetProgram(), "normalTex"), 1);
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, bufferNormalTex);
+
+	glUniform1i(glGetUniformLocation(SSAOShader->GetProgram(), "noiseTex"), 2);
+	glActiveTexture(GL_TEXTURE2);
+	glBindTexture(GL_TEXTURE_2D, SSAONoiseTex);
+
+
+	Matrix4 tempProjMatrix = Matrix4::Perspective(1.0f, 1000.0f, (float)width / (float)height, 45.0f);
+	glUniformMatrix4fv(glGetUniformLocation(SSAOShader->GetProgram(), "lensProjection"), 1, false, tempProjMatrix.values);
+
+	Matrix4 invProj = tempProjMatrix.Inverse();
+	glUniformMatrix4fv(glGetUniformLocation(SSAOShader->GetProgram(), "inverseProjection"), 1, false, invProj.values);
+
+
+	// Passing vec3 array values
+	vector<float> flatArray;
+	for (const auto& vec3 : SSAOKernels)
+	{
+		flatArray.push_back(vec3.x);
+		flatArray.push_back(vec3.y);
+		flatArray.push_back(vec3.z);
+	}
+
+	glUniform3fv(glGetUniformLocation(SSAOShader->GetProgram(), "samples"), SSAO_KERNEL_COUNT, flatArray.data());
+
+	quad->Draw();
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glEnable(GL_DEPTH_TEST);
+}
+
+void Renderer::SSAOBlurring()
+{
+	glBindFramebuffer(GL_FRAMEBUFFER, processFBO);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, processColourTex, 0);
+	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+	BindShader(blurShader);
+
+	modelMatrix.ToIdentity();
+	viewMatrix.ToIdentity();
+	projMatrix.ToIdentity();
+	UpdateShaderMatrices();
+
+	glDisable(GL_DEPTH_TEST);
+
+	glActiveTexture(GL_TEXTURE0);
+	glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "sceneTex"), 0);
+	for (int i = 0; i < SSAO_BLUR_PASSES; ++i) {
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, processColourTex, 0);
+		glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "isVertical"), 0);
+
+		glBindTexture(GL_TEXTURE_2D, SSAOTex);
+		quad->Draw();
+		//Now to swap the colour buffers , and do the second blur pass
+		glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "isVertical"), 1);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, SSAOTex, 0);
 		glBindTexture(GL_TEXTURE_2D, processColourTex);
 		quad->Draw();
 	}
