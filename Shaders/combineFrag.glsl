@@ -76,13 +76,13 @@ void main(void) {
 	
 	fragColour.xyz = diffuse * 0.15 * SSAOVal; // ambient
 	fragColour.xyz += diffuse * light; // lambert
-	//fragColour.xyz += indirect * 0.5; // indirect
+	fragColour.xyz += indirect; // indirect
 	fragColour.xyz += specular; // Specular
 
 
 
-	// SSAO difference test
-	fragColour2.xyz = diffuse * 0.15;
+	//  difference test
+	fragColour2.xyz = diffuse * 0.15 * SSAOVal; // ambient
 	fragColour2.xyz += diffuse * light; // lambert
 	fragColour2.xyz += specular; // Specular
 

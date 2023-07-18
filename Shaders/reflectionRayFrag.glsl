@@ -49,7 +49,7 @@ uniform sampler2D baseTexture;
 float maxDistance = 50;
 float resolution = 1.0;
 int steps = 25;
-const float thickness = 0.3;
+const float thickness = 0.4;
 
 /////////////////////////////
 

@@ -18,6 +18,13 @@ in Vertex{
 
 out vec4 fragColour[4]; //Our final outputted colours!
 
+float ign(vec2 st)
+{
+    st = fract(st * vec2(5.3983, 5.4427));
+    st += dot(st, st.yx + vec2(21.5351, 14.3137));
+    return fract(st.x * st.y * (st.x + st.y));
+}
+
 void main(void) {
 	if (texture(diffuseTex, IN.texCoord).a < 0.5) {
 		discard;
@@ -62,8 +69,11 @@ void main(void) {
 
 	/// Raymarch Direction ///
 
-	float rand1 = fract(sin(dot(gl_FragCoord.xy, vec2(12.9898, 78.233))) * 43758.5453);
-	float rand2 = fract(sin(dot(vec2(rand1, 0.0), vec2(12.9898, 78.233))) * 43758.5453);
+	//float rand1 = fract(sin(dot(gl_FragCoord.xy, vec2(12.9898, 78.233))) * 43758.5453);
+	//float rand2 = fract(sin(dot(vec2(rand1, 0.0), vec2(12.9898, 78.233))) * 43758.5453);
+
+	float rand1 = ign(gl_FragCoord.xy * 0.1);
+	float rand2 = ign(vec2(rand1, 0.0));
 	
 	vec3 up = abs(normal.z) < 0.999 ? vec3(0, 0, 1) : vec3(1, 0, 0);
     vec3 newTangent = normalize(cross(up, normal));

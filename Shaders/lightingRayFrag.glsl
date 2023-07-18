@@ -12,6 +12,9 @@ vec2 texCoord;
 //out vec4 fragColor;
 
 out vec4 uvOutput;
+out vec4 debugOutput;
+out vec4 debugOutput2;
+out vec4 debugOutput3;
 
 uniform vec3 cameraPos;
 
@@ -29,6 +32,12 @@ uniform sampler2D hemisphereTexture;
 
 // input colour
 uniform sampler2D baseTexture;
+
+// input lighting
+uniform sampler2D lightTex;
+
+// normal sampling
+uniform sampler2D normalTexture;
 
 
 //// Raymarch Parameters ////
@@ -86,8 +95,19 @@ void main(void) {
 	vec3 unitPositionFrom = normalize(positionFrom.xyz);
 
 
-	// Unpacks and normalizes the ray direction for global illumination
+////// Unpacks and normalizes the ray direction for global illumination
 	vec3 hemisphereVector = normalize( (texture(hemisphereTexture, newTexCoord.xy).xyz - 0.5) * 2);
+
+	vec3 hemisphereVectorDebugHolder = hemisphereVector;
+
+	hemisphereVector = mat3(NormalViewMatrix) * hemisphereVector;
+//////
+
+////// Normal vector for valuing step at the end 
+	vec3 normal			= normalize( texture(normalTexture, newTexCoord.xy).xyz * 2.0 - 1.0 );
+	// World space normal to view space
+	normal				= mat3(NormalViewMatrix) * normal;
+//////
 
 ////// VEC4 to hold the actively read viewspace positions during raymarching ////// 
 	vec4 positionTo = vec4(0);
@@ -388,6 +408,8 @@ void main(void) {
 
 ////// Visibility calculation //////
 
+	float valueDot = max(dot(normal, hemisphereVector), 0);
+	valueDot = clamp(valueDot*2.0f, 0, 1);
 
 	float visibility =
 		// Has hit
@@ -423,6 +445,12 @@ void main(void) {
 			)
 		)
 
+		// Dot product against normal to devalue rays near-parallel to surface
+		* (
+			valueDot
+		)
+
+
 		// Removes is hit is beyond frustum area
 		* (uv.x < 0 || uv.x > 1 ? 0 : 1)
 		* (uv.y < 0 || uv.y > 1 ? 0 : 1);
@@ -452,14 +480,22 @@ void main(void) {
 		uvOutput = vec4(0.0f);
 	}
 	else {
-		uvOutput = texture( baseTexture, uv.xy);
+		vec4 baseColour = texture( baseTexture, uv.xy);
+		uvOutput = baseColour * 0.15;
+		uvOutput += baseColour * texture( lightTex, uv.xy );
+		uvOutput *= uv.b;
+		uvOutput.a = 1.0;
 	}
 	
 	
-	
+	debugOutput = vec4(valueDot, 0, 0, 1);
+
+	debugOutput2 = vec4(hemisphereVectorDebugHolder, 1);
+
+	debugOutput3 = vec4(uv.x, uv.y, 0, 1);
 
 	// quick visibility test
-	debugValue2 = vec4(uv.b, 0, 0, 1);
+	//debugValue2 = vec4(uv.b, 0, 0, 1);
 
 	// output UV coords with "value" in B component
 	//uvOutput = vec4(uv.xyz, 1.0);

@@ -11,7 +11,7 @@ const int POST_PASSES = 10;
 
 const int REFLECT_BLUR_PASSES = 2;
 
-const int ILLUMINATION_BLUR_PASSES = 6;
+const int ILLUMINATION_BLUR_PASSES = 10;
 
 const int SSAO_BLUR_PASSES = 2;
 
@@ -288,6 +288,50 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 
 	root->AddChild(testCube5);
 
+	//SceneNode* testCube6 = new SceneNode();
+	//testCube6->SetTransform(Matrix4::Translation(Vector3(0.0f, 2.5f, -50.0f)));
+	//testCube6->SetColour(Vector4(1.0f, 1.0f, 1.0f, 1.0f));
+	//testCube6->SetModelScale(Vector3(100.0f, 10.0f, 5.0f));
+	//testCube6->SetBoundingRadius(2000.0f);
+	//testCube6->SetMesh(Mesh::LoadFromMeshFile("Cube.msh"));
+	//testCube6->SetTexture(earthTex);
+	//testCube6->SetReflect(unreflectiveTex);
+	//
+	//root->AddChild(testCube6);
+	//
+	//SceneNode* testCube7 = new SceneNode();
+	//testCube7->SetTransform(Matrix4::Translation(Vector3(0.0f, 2.5f, 50.0f)));
+	//testCube7->SetColour(Vector4(1.0f, 1.0f, 1.0f, 1.0f));
+	//testCube7->SetModelScale(Vector3(100.0f, 10.0f, 5.0f));
+	//testCube7->SetBoundingRadius(2000.0f);
+	//testCube7->SetMesh(Mesh::LoadFromMeshFile("Cube.msh"));
+	//testCube7->SetTexture(earthTex);
+	//testCube7->SetReflect(unreflectiveTex);
+	//
+	//root->AddChild(testCube7);
+	//
+	//SceneNode* testCube8 = new SceneNode();
+	//testCube8->SetTransform(Matrix4::Translation(Vector3(50.0f, 2.5f, 0.0f)));
+	//testCube8->SetColour(Vector4(1.0f, 1.0f, 1.0f, 1.0f));
+	//testCube8->SetModelScale(Vector3(5.0f, 10.0f, 100.0f));
+	//testCube8->SetBoundingRadius(2000.0f);
+	//testCube8->SetMesh(Mesh::LoadFromMeshFile("Cube.msh"));
+	//testCube8->SetTexture(earthTex);
+	//testCube8->SetReflect(unreflectiveTex);
+	//
+	//root->AddChild(testCube8);
+	//
+	//SceneNode* testCube9 = new SceneNode();
+	//testCube9->SetTransform(Matrix4::Translation(Vector3(-50.0f, 2.5f, 0.0f)));
+	//testCube9->SetColour(Vector4(1.0f, 1.0f, 1.0f, 1.0f));
+	//testCube9->SetModelScale(Vector3(5.0f, 10.0f, 100.0f));
+	//testCube9->SetBoundingRadius(2000.0f);
+	//testCube9->SetMesh(Mesh::LoadFromMeshFile("Cube.msh"));
+	//testCube9->SetTexture(earthTex);
+	//testCube9->SetReflect(unreflectiveTex);
+	//
+	//root->AddChild(testCube9);
+
 	// animation test
 
 	//for (int i = 0; i < 10; i++) {
@@ -510,7 +554,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, reflectionStorageTex, 0);
 	//glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, bufferViewSpacePosTex, 0);
 	//glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, debugStorageTex1, 0);
-	//glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT3, GL_TEXTURE_2D, debugStorageTex2, 0);
+	//glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, debugStorageTex2, 0);
 	//glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT4, GL_TEXTURE_2D, debugStorageTex3, 0);
 	glDrawBuffers(1, buffers);
 
@@ -521,7 +565,10 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	//Preparing ilumination FBO
 	glBindFramebuffer(GL_FRAMEBUFFER, illuminationFBO);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, illuminationStorageTex, 0);
-	glDrawBuffers(1, buffers);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, debugStorageTex2, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, debugStorageTex3, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT3, GL_TEXTURE_2D, bufferViewSpacePosTex, 0);
+	glDrawBuffers(4, buffers);
 
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
 		return;
@@ -1153,7 +1200,18 @@ void Renderer::RaymarchLighting()
 	//Reflected geometry colour
 	glUniform1i(glGetUniformLocation(illuminationShader->GetProgram(), "baseTexture"), 2);
 	glActiveTexture(GL_TEXTURE2);
-	glBindTexture(GL_TEXTURE_2D, alphaColourTex);
+	glBindTexture(GL_TEXTURE_2D, bufferColourTex);
+
+	
+	//Reflected geometry Light
+	glUniform1i(glGetUniformLocation(illuminationShader->GetProgram(), "lightTex"), 3);
+	glActiveTexture(GL_TEXTURE3);
+	glBindTexture(GL_TEXTURE_2D, lightDiffuseTex);
+
+	// Normal texture for ray valuing
+	glUniform1i(glGetUniformLocation(illuminationShader->GetProgram(), "normalTexture"), 4);
+	glActiveTexture(GL_TEXTURE4);
+	glBindTexture(GL_TEXTURE_2D, bufferNormalTex);
 
 
 	Matrix4 tempProjMatrix = Matrix4::Perspective(1.0f, 1000.0f, (float)width / (float)height, 45.0f);
