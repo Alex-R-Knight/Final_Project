@@ -28,8 +28,6 @@ uniform vec2 pixelSize; // reciprocal of resolution
 //uniform sampler2D positionTexture;
 uniform sampler2D depthTex;
 
-uniform sampler2D hemisphereTexture;
-
 // input colour
 uniform sampler2D baseTexture;
 

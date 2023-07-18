@@ -72,23 +72,23 @@ void main(void) {
 	//float rand1 = fract(sin(dot(gl_FragCoord.xy, vec2(12.9898, 78.233))) * 43758.5453);
 	//float rand2 = fract(sin(dot(vec2(rand1, 0.0), vec2(12.9898, 78.233))) * 43758.5453);
 
-	float rand1 = ign(gl_FragCoord.xy * 0.1);
-	float rand2 = ign(vec2(rand1, 0.0));
-	
-	vec3 up = abs(normal.z) < 0.999 ? vec3(0, 0, 1) : vec3(1, 0, 0);
-    vec3 newTangent = normalize(cross(up, normal));
-    vec3 bitangent = cross(normal, newTangent);
-
-	float theta = 2.0 * 3.14159 * rand1;
-    float phi = acos(sqrt(rand2));
-
-    vec3 sampleDir = vec3(cos(theta) * sin(phi), sin(theta) * sin(phi), cos(phi));
-
-	sampleDir = newTangent * sampleDir.x + bitangent * sampleDir.y + normal * sampleDir.z;
-
-	fragColour[2] = vec4(sampleDir.xyz * 0.5 + 0.5, 1.0);
+	//float rand1 = ign(gl_FragCoord.xy * 0.1);
+	//float rand2 = ign(vec2(rand1, 0.0));
+	//
+	//vec3 up = abs(normal.z) < 0.999 ? vec3(0, 0, 1) : vec3(1, 0, 0);
+    //vec3 newTangent = normalize(cross(up, normal));
+    //vec3 bitangent = cross(normal, newTangent);
+	//
+	//float theta = 2.0 * 3.14159 * rand1;
+    //float phi = acos(sqrt(rand2));
+	//
+    //vec3 sampleDir = vec3(cos(theta) * sin(phi), sin(theta) * sin(phi), cos(phi));
+	//
+	//sampleDir = newTangent * sampleDir.x + bitangent * sampleDir.y + normal * sampleDir.z;
+	//
+	//fragColour[2] = vec4(sampleDir.xyz * 0.5 + 0.5, 1.0);
 
 	//// Reflection
 
-	fragColour[3] = texture2D(reflectTex, IN.texCoord);
+	fragColour[2] = texture2D(reflectTex, IN.texCoord);
 }

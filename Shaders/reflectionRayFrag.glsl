@@ -32,7 +32,6 @@ uniform vec2 pixelSize; // reciprocal of resolution
 //uniform sampler2D positionTexture;
 uniform sampler2D depthTex;
 
-uniform sampler2D hemisphereTexture;
 uniform sampler2D normalTexture;
 //reflect
 uniform sampler2D reflectionTexture;
@@ -95,7 +94,7 @@ void main(void) {
 ////// UV vec4 to be used as shader output //////
 	vec4 uv = vec4(0.0f, 0.0f, 0.0f, 0.0f);
 //////
-	vec2 texSize  = textureSize(hemisphereTexture, 0).xy;
+	vec2 texSize  = textureSize(baseTexture, 0).xy;
 
 	vec2 newTexCoord = vec2(gl_FragCoord.xy / texSize);
 	// Viewspace position of current fragment
@@ -124,8 +123,6 @@ void main(void) {
 	// Reflect normalised view space position via view space normal
 	vec3 pivot			= normalize(reflect(unitPositionFrom, normal));
 
-	// Unpacks and normalizes the ray direction for global illumination
-	vec3 hemisphereVector = normalize( (texture(hemisphereTexture, newTexCoord.xy).xyz - 0.5) * 2);
 
 ////// VEC4 to hold the actively read viewspace positions during raymarching ////// 
 	vec4 positionTo = vec4(0);
@@ -136,9 +133,7 @@ void main(void) {
 	vec4 startView = vec4(positionFrom.xyz, 1);
 
 	// End position of start pos plus maxdistance times normalized direction vector
-	//vec4 endView   = vec4(positionFrom.xyz + (hemisphereVector * maxDistance), 1);
-
-	// reflection based alternate [SWITCHHERE]
+	// reflection based alternate 
 	vec4 endView   = vec4(positionFrom.xyz + (maxDistance * pivot), 1);
 
 ////// The end View position must not go into positive Z axis space

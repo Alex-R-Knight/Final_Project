@@ -381,7 +381,6 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	GenerateScreenTexture(bufferDepthTex, true);
 	GenerateScreenTexture(bufferColourTex);
 	GenerateScreenTexture(bufferNormalTex);
-	GenerateScreenTexture(bufferStochasticNormalTex);
 	GenerateScreenTexture(reflectionBufferTex);
 	GenerateScreenTexture(lightDiffuseTex);
 	GenerateScreenTexture(lightSpecularTex);
@@ -551,10 +550,9 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	glBindFramebuffer(GL_FRAMEBUFFER, bufferFBO);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, bufferColourTex, 0);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, bufferNormalTex, 0);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, bufferStochasticNormalTex, 0);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT3, GL_TEXTURE_2D, reflectionBufferTex, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, reflectionBufferTex, 0);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, bufferDepthTex, 0);
-	glDrawBuffers(4, buffers);
+	glDrawBuffers(3, buffers);
 
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
 		return;
@@ -653,7 +651,6 @@ Renderer::~Renderer(void) {
 	glDeleteTextures(1, &alphaDepthTex_2);
 	glDeleteTextures(1, &bufferColourTex);
 	glDeleteTextures(1, &bufferNormalTex);
-	glDeleteTextures(1, &bufferStochasticNormalTex);
 	glDeleteTextures(1, &reflectionBufferTex);
 	glDeleteTextures(1, &bufferDepthTex);
 	glDeleteTextures(1, &lightDiffuseTex);
@@ -1217,29 +1214,25 @@ void Renderer::RaymarchLighting()
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, bufferDepthTex);
 
-	glUniform1i(glGetUniformLocation(illuminationShader->GetProgram(), "hemisphereTexture"), 1);
-	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, bufferStochasticNormalTex);
-
 	//Reflected geometry colour
-	glUniform1i(glGetUniformLocation(illuminationShader->GetProgram(), "baseTexture"), 2);
-	glActiveTexture(GL_TEXTURE2);
+	glUniform1i(glGetUniformLocation(illuminationShader->GetProgram(), "baseTexture"), 1);
+	glActiveTexture(GL_TEXTURE1);
 	glBindTexture(GL_TEXTURE_2D, bufferColourTex);
 
 	
 	//Reflected geometry Light
-	glUniform1i(glGetUniformLocation(illuminationShader->GetProgram(), "lightTex"), 3);
-	glActiveTexture(GL_TEXTURE3);
+	glUniform1i(glGetUniformLocation(illuminationShader->GetProgram(), "lightTex"), 2);
+	glActiveTexture(GL_TEXTURE2);
 	glBindTexture(GL_TEXTURE_2D, lightDiffuseTex);
 
 	// Normal texture for ray valuing
-	glUniform1i(glGetUniformLocation(illuminationShader->GetProgram(), "normalTexture"), 4);
-	glActiveTexture(GL_TEXTURE4);
+	glUniform1i(glGetUniformLocation(illuminationShader->GetProgram(), "normalTexture"), 3);
+	glActiveTexture(GL_TEXTURE3);
 	glBindTexture(GL_TEXTURE_2D, bufferNormalTex);
 
 	// IGN Noise Texture
-	glUniform1i(glGetUniformLocation(illuminationShader->GetProgram(), "noiseTex"), 5);
-	glActiveTexture(GL_TEXTURE5);
+	glUniform1i(glGetUniformLocation(illuminationShader->GetProgram(), "noiseTex"), 4);
+	glActiveTexture(GL_TEXTURE4);
 	glBindTexture(GL_TEXTURE_2D, illuminationNoiseTex);
 
 
@@ -1324,26 +1317,22 @@ void Renderer::RaymarchReflection()
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, bufferDepthTex);
 
-	glUniform1i(glGetUniformLocation(reflectionShader->GetProgram(), "hemisphereTexture"), 1);
+	glUniform1i(glGetUniformLocation(reflectionShader->GetProgram(), "normalTexture"), 1);
 	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, bufferStochasticNormalTex);
-
-	glUniform1i(glGetUniformLocation(reflectionShader->GetProgram(), "normalTexture"), 2);
-	glActiveTexture(GL_TEXTURE2);
 	glBindTexture(GL_TEXTURE_2D, bufferNormalTex);
 
-	glUniform1i(glGetUniformLocation(reflectionShader->GetProgram(), "reflectionTexture"), 3);
-	glActiveTexture(GL_TEXTURE3);
+	glUniform1i(glGetUniformLocation(reflectionShader->GetProgram(), "reflectionTexture"), 2);
+	glActiveTexture(GL_TEXTURE2);
 	glBindTexture(GL_TEXTURE_2D, reflectionBufferTex);
 
 	// Skybox
-	glUniform1i(glGetUniformLocation(reflectionShader->GetProgram(), "cubeTex"), 4);
-	glActiveTexture(GL_TEXTURE4);
+	glUniform1i(glGetUniformLocation(reflectionShader->GetProgram(), "cubeTex"), 3);
+	glActiveTexture(GL_TEXTURE3);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, cubeMap);
 
 	//Reflected geometry colour
-	glUniform1i(glGetUniformLocation(reflectionShader->GetProgram(), "baseTexture"), 5);
-	glActiveTexture(GL_TEXTURE5);
+	glUniform1i(glGetUniformLocation(reflectionShader->GetProgram(), "baseTexture"), 4);
+	glActiveTexture(GL_TEXTURE4);
 	glBindTexture(GL_TEXTURE_2D, alphaColourTex);
 
 	Matrix4 tempProjMatrix = Matrix4::Perspective(1.0f, 1000.0f, (float)width / (float)height, 45.0f);

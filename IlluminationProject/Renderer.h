@@ -134,7 +134,6 @@ protected:
 	GLuint bufferDepthTex; // Depth goes here
 	//...
 	// Global Illumination Part
-	GLuint bufferStochasticNormalTex; // Stochastic normals go here
 	GLuint illuminationNoiseTex;
 
 	// Reflection part
