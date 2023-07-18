@@ -64,6 +64,7 @@ protected:
 	// Screenspace illumination
 	void RaymarchLighting();
 	void LightingBlurring();
+	float IGN(int x, int y);
 
 	// Screen Space Ambient Occlusion
 	void SSAOProcess();
@@ -134,6 +135,8 @@ protected:
 	//...
 	// Global Illumination Part
 	GLuint bufferStochasticNormalTex; // Stochastic normals go here
+	GLuint illuminationNoiseTex;
+
 	// Reflection part
 	GLuint reflectionBufferTex;
 

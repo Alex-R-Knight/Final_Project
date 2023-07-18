@@ -483,6 +483,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	}
 
 	// Noise generation
+	// SSAO
 	for (int i = 0; i < 16; i++)
 	{
 		Vector3 noise(
@@ -497,6 +498,26 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	glGenTextures(1, &SSAONoiseTex);
 	glBindTexture(GL_TEXTURE_2D, SSAONoiseTex);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, 4, 4, 0, GL_RGB, GL_FLOAT, &SSAONoise[0]);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+	// IGN
+	vector<Vector3> IGNVector;
+
+	for (int y = 0; y < 16; y++)
+	{
+		for (int x = 0; x < 16; x++)
+		{
+			float noiseVal = IGN(x, y);
+			Vector3 newIGNVector = Vector3(noiseVal, noiseVal, noiseVal);
+			IGNVector.push_back(newIGNVector);
+		}
+	}
+	glGenTextures(1, &illuminationNoiseTex);
+	glBindTexture(GL_TEXTURE_2D, illuminationNoiseTex);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, 16, 16, 0, GL_RGB, GL_FLOAT, &IGNVector[0]);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -637,6 +658,9 @@ Renderer::~Renderer(void) {
 	glDeleteTextures(1, &bufferDepthTex);
 	glDeleteTextures(1, &lightDiffuseTex);
 	glDeleteTextures(1, &lightSpecularTex);
+
+	glDeleteTextures(1, &SSAONoiseTex);
+	glDeleteTextures(1, &illuminationNoiseTex);
 
 	glDeleteTextures(1, &bufferViewSpacePosTex);
 	glDeleteTextures(1, &debugStorageTex1);
@@ -1213,6 +1237,11 @@ void Renderer::RaymarchLighting()
 	glActiveTexture(GL_TEXTURE4);
 	glBindTexture(GL_TEXTURE_2D, bufferNormalTex);
 
+	// IGN Noise Texture
+	glUniform1i(glGetUniformLocation(illuminationShader->GetProgram(), "noiseTex"), 5);
+	glActiveTexture(GL_TEXTURE5);
+	glBindTexture(GL_TEXTURE_2D, illuminationNoiseTex);
+
 
 	Matrix4 tempProjMatrix = Matrix4::Perspective(1.0f, 1000.0f, (float)width / (float)height, 45.0f);
 	glUniformMatrix4fv(glGetUniformLocation(illuminationShader->GetProgram(), "lensProjection"), 1, false, tempProjMatrix.values);
@@ -1556,4 +1585,9 @@ void Renderer::secondCameraBuffer() {
 	currentAlphaFBO = alphaFBO_2;
 	currentAlphaColourTex = alphaColourTex_2;
 	currentAlphaDepthTex = alphaDepthTex_2;
+}
+
+float Renderer::IGN(int x, int y)
+{
+	return std::fmodf(52.9829189f * std::fmodf(0.06711056f * float(x) + 0.00583715f * float(y), 1.0f), 1.0f);
 }

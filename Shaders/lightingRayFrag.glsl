@@ -39,6 +39,9 @@ uniform sampler2D lightTex;
 // normal sampling
 uniform sampler2D normalTexture;
 
+// noise
+uniform sampler2D noiseTex;
+
 
 //// Raymarch Parameters ////
 
@@ -81,7 +84,7 @@ void main(void) {
 ////// UV vec4 to be used as shader output //////
 	vec4 uv = vec4(0.0f, 0.0f, 0.0f, 0.0f);
 //////
-	vec2 texSize  = textureSize(hemisphereTexture, 0).xy;
+	vec2 texSize  = textureSize(baseTexture, 0).xy;
 
 	vec2 newTexCoord = vec2(gl_FragCoord.xy / texSize);
 	// Viewspace position of current fragment
@@ -95,19 +98,46 @@ void main(void) {
 	vec3 unitPositionFrom = normalize(positionFrom.xyz);
 
 
+////// Normal vector for valuing step at the end 
+	vec3 worldNormal	= normalize( texture(normalTexture, newTexCoord.xy).xyz * 2.0 - 1.0 );
+	// World space normal to view space
+	vec3 normal			= mat3(NormalViewMatrix) * worldNormal;
+//////
+
+	// Noise preparation
+	vec2 noiseScale = texSize / 16.0f;
+	float noise = texture(noiseTex, IN.texCoord * noiseScale).x;
+
 ////// Unpacks and normalizes the ray direction for global illumination
-	vec3 hemisphereVector = normalize( (texture(hemisphereTexture, newTexCoord.xy).xyz - 0.5) * 2);
+	
+	vec3 up = abs(worldNormal.z) < 0.999 ? vec3(0, 0, 1) : vec3(1, 0, 0);
+    vec3 newTangent = normalize(cross(up, worldNormal));
+    vec3 bitangent = cross(worldNormal, newTangent);
+
+	float theta = 2.0 * 3.14159 * noise;
+    float phi = acos(sqrt(noise));
+
+	vec3 sampleDir = vec3(cos(theta) * sin(phi), sin(theta) * sin(phi), cos(phi));
+
+	sampleDir = newTangent * sampleDir.x + bitangent * sampleDir.y + worldNormal * sampleDir.z;
+
+	vec3 hemisphereVector = normalize(sampleDir);
 
 	vec3 hemisphereVectorDebugHolder = hemisphereVector;
 
 	hemisphereVector = mat3(NormalViewMatrix) * hemisphereVector;
+
 //////
 
-////// Normal vector for valuing step at the end 
-	vec3 normal			= normalize( texture(normalTexture, newTexCoord.xy).xyz * 2.0 - 1.0 );
-	// World space normal to view space
-	normal				= mat3(NormalViewMatrix) * normal;
-//////
+//////// Unpacks and normalizes the ray direction for global illumination
+//	vec3 hemisphereVector = normalize( (texture(hemisphereTexture, newTexCoord.xy).xyz - 0.5) * 2);
+//
+//	vec3 hemisphereVectorDebugHolder = hemisphereVector;
+//
+//	// Translate the direction vector to view space
+//	hemisphereVector = mat3(NormalViewMatrix) * hemisphereVector;
+////////
+
 
 ////// VEC4 to hold the actively read viewspace positions during raymarching ////// 
 	vec4 positionTo = vec4(0);
@@ -488,7 +518,7 @@ void main(void) {
 	}
 	
 	
-	debugOutput = vec4(valueDot, 0, 0, 1);
+	debugOutput = vec4(noise, noise, noise, 1);
 
 	debugOutput2 = vec4(hemisphereVectorDebugHolder, 1);
 
