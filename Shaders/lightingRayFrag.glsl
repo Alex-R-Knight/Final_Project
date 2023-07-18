@@ -157,13 +157,6 @@ void main(void) {
 	}
 //////
 
-////// Debug storage
-	vec4 debugValue = startView;
-	vec4 debugValue2 = endView;
-//////
-
-///////
-
 /////// Screen space translation of view space positions ///
 
 	// Start position
@@ -178,18 +171,8 @@ void main(void) {
 	// Screen space X-Y coordinates to UV coordinates
 	startFrag.xy	= startFrag.xy * 0.5 + 0.5;
 
-////// Debug storage
-	// Working as intended on renderdoc test
-	//vec4 debugValue = vec4(startFrag.xy, 0.0, 1.0);
-//////
-
 	// UV coordinates to fragment coordinates
 	startFrag.xy	*= texSize;
-
-////// Debug storage
-	// Working as intended, fragment coordinates output
-	//vec4 debugValue3 = vec4(startFrag.xy, 0.0, 1.0);
-//////
 
 	//End position
 	vec4 endFrag	= endView;
@@ -198,76 +181,25 @@ void main(void) {
 	endFrag			= lensProjection * endFrag;
 
 
-////// Debug storage
-	// 
-	//vec4 debugValue3 = vec4(endFrag.rgba);
-//////
-
 	// Perspective divide
 	endFrag.xyz		/= endFrag.w;
 
-////// Debug storage
-	// 
-	//vec4 debugValue3 = vec4(endFrag.xy, 0.0, 1.0);
-//////
 
 	// Screen space X-Y coordinates to UV coordinates //SUSSY
 	endFrag.xy		= endFrag.xy * 0.5 + 0.5;
 
-////// Debug storage
-	// 
-	//vec4 debugValue4 = vec4(endFrag.xy, 0.0, 1.0);
-//////
 
 	// UV coordinates to fragment coordinates
 	endFrag.xy		*= texSize;
-
-
-////// Restricting fragment coordinates to functional range
-//	if (endFrag.x > texSize.x || endFrag.x < 0 || endFrag.y > texSize.y || endFrag.y < 0) {
-//		
-//		vec4 direction = vec4(endFrag.xy-startFrag.xy, 0, 0);
-//
-//		float xBorderDist = (direction.x > 0) ? (texSize.x - startFrag.x) : (startFrag.x);
-//
-//		float yBorderDist = (direction.y > 0) ? (texSize.y - startFrag.y) : (startFrag.y);
-//
-//		float xRealDist = abs(endFrag.x - startFrag.x);
-//
-//		float yRealDist = abs(endFrag.y - startFrag.y);
-//
-//		float xRatio = xBorderDist / xRealDist;
-//
-//		float yRatio = yBorderDist / yRealDist;
-//
-//		endFrag = (xRatio < yRatio) ? (startFrag + xRatio * direction) : (startFrag + yRatio * direction);
-//	}
-//////
-
-////// Debug storage
-	// 
-	//vec4 debugValue4 = vec4(endFrag.xy, 0.0, 1.0);
-//////
-
-
 
 /////// First Pass Preparation ///
 
 	//Produce UV coordinate of fragment position
 	vec2 frag  = startFrag.xy;
-    
-////// Debug storage
-	//// frag here outputs frag coords
-	//vec4 debugValue3 = vec4(frag.xy, 0.0, 1.0);
-//////
 
 	// Divide fragment coordinates by texture size for UV coordinates
 	uv.xy = frag / texSize;
 
-////// Debug storage
-	//// frag here outputs frag coords
-	//vec4 debugValue4 = vec4(uv.xy, 0.0, 1.0);
-//////
 
 	//X and Y delta values of the march across fragments
 	float deltaX    = endFrag.x - startFrag.x;
@@ -306,33 +238,14 @@ void main(void) {
 	float clampVal = (useX == 1.0f) ? texSize.x : texSize.y;
 //////
 
-////// Debug storage
-	// outputs frag coordinates from "frag" now
-	//vec4 debugValue = vec4(frag.xy, 0.0, 1.0);
-//////
-
-
-////// Clean debug setup
-	vec4 debugValue3;
-	vec4 debugValue4;
-//////
-
 
 ////// First pass //////
 	for (float i = 0; i <= clamp(delta, 0.0f, clampVal); ++i) {
 	//for (float i = 0; i < 1; ++i) {
-		
-////////// Debug test
-		debugValue = vec4(frag, 0, 1);
-//////////
 
 
 		// Frag is incremented by the per-step increment value
 		frag		+= increment;
-
-////////// Debug test
-		debugValue2 = vec4(frag, 0, 1);
-//////////
 
 		// Divide fragment coordinates by texture size for UV coordinates
 		uv.xy		= frag / texSize;
@@ -364,15 +277,6 @@ void main(void) {
 		// Calculate depth by comparing the ray and the fragment depths
 		depth        = positionTo.z- viewDistance;
 
-////////// Debug test
-		//debugValue3 = vec4(positionTo.xyz, 1);
-//////////
-
-////////// Debug test
-		//debugValue4 = vec4(thickness, viewDistance, depth, 1);
-//////////
-
-
 		// if an intersection is detected, hit0 is set to 1, and the first pass ends.
 		if (depth > 0 && depth < thickness) {
 			//if ( abs(depth) < thickness ) {
@@ -384,14 +288,6 @@ void main(void) {
 		  search0 = search1;
 		}
 	}
-//////
-
-//////Debug work
-	
-	//uvOutput = vec4(uv.xy, hit0, 1);
-
-	debugValue3 = vec4(uv.xy, hit0, 1);
-
 //////
 
 	// search1 is set to halfway between the last miss and the last hit positions
@@ -432,7 +328,6 @@ void main(void) {
 	}
 //////
 
-	debugValue4 = vec4(uv.xy, hit1, 1);
 
 ////// Visibility calculation //////
 
@@ -486,23 +381,7 @@ void main(void) {
 
 	visibility = clamp(visibility, 0, 1);
 
-	uv.b = visibility;
-
-
-	//uv.r = 1.0;
-	//uv.g = 0.0;
-	//uv.b = 1.0;
-	uv.a = 1.0;
-
-	//uv.rgb = pivot.xyz * 0.5 + 0.5;
-
-	//uv.rgb = texture2D(hemisphereTexture, IN.texCoord.xy).xyz;
-
-	//uv.rgb = unitPositionFrom.rgb;
-
-	// Defauly viability value
-	//uv.b = (hit1 == 1.0) ? 1.0f : 0.0f;
-	
+	uv.b = visibility;	
 	
 	if ( uv.b <= 0.0 ) {
 		uvOutput = vec4(0.0f);
@@ -515,16 +394,9 @@ void main(void) {
 		uvOutput.a = 1.0;
 	}
 	
-	
 	debugOutput = vec4(noise, noise, noise, 1);
 
 	debugOutput2 = vec4(hemisphereVectorDebugHolder, 1);
 
 	debugOutput3 = vec4(uv.x, uv.y, 0, 1);
-
-	// quick visibility test
-	//debugValue2 = vec4(uv.b, 0, 0, 1);
-
-	// output UV coords with "value" in B component
-	//uvOutput = vec4(uv.xyz, 1.0);
 }
