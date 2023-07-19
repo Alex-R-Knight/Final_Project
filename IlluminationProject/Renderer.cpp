@@ -238,7 +238,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	testCube->SetTransform(Matrix4::Translation(Vector3(0.0f, 0.0f, -25.0f)));
 	testCube->SetColour(Vector4(1.0f, 1.0f, 1.0f, 1.0f));
 	testCube->SetModelScale(Vector3(5.0f, 5.0f, 5.0f));
-	testCube->SetBoundingRadius(2000.0f);
+	testCube->SetBoundingRadius(6.0f);
 	testCube->SetMesh(Mesh::LoadFromMeshFile("Cube.msh"));
 	testCube->SetTexture(earthTex);
 	testCube->SetReflect(unreflectiveTex);
@@ -249,7 +249,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	testCube2->SetTransform(Matrix4::Translation(Vector3(0.0f, 5.0f, -30.0f)));
 	testCube2->SetColour(Vector4(1.0f, 1.0f, 1.0f, 1.0f));
 	testCube2->SetModelScale(Vector3(5.0f, 5.0f, 5.0f));
-	testCube2->SetBoundingRadius(2000.0f);
+	testCube2->SetBoundingRadius(6.0f);
 	testCube2->SetMesh(Mesh::LoadFromMeshFile("Cube.msh"));
 	testCube2->SetTexture(earthTex);
 	testCube2->SetReflect(unreflectiveTex);
@@ -260,7 +260,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	testCube3->SetTransform(Matrix4::Translation(Vector3(5.0f, 5.0f, -30.0f)));
 	testCube3->SetColour(Vector4(1.0f, 1.0f, 1.0f, 1.0f));
 	testCube3->SetModelScale(Vector3(5.0f, 5.0f, 5.0f));
-	testCube3->SetBoundingRadius(2000.0f);
+	testCube3->SetBoundingRadius(6.0f);
 	testCube3->SetMesh(Mesh::LoadFromMeshFile("Cube.msh"));
 	testCube3->SetTexture(grassTex);
 	testCube3->SetReflect(unreflectiveTex);
@@ -271,7 +271,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	testCube4->SetTransform(Matrix4::Translation(Vector3(0.0f, 0.0f, -30.0f)));
 	testCube4->SetColour(Vector4(1.0f, 1.0f, 1.0f, 1.0f));
 	testCube4->SetModelScale(Vector3(5.0f, 5.0f, 5.0f));
-	testCube4->SetBoundingRadius(2000.0f);
+	testCube4->SetBoundingRadius(6.0f);
 	testCube4->SetMesh(Mesh::LoadFromMeshFile("Cube.msh"));
 	testCube4->SetTexture(earthTex);
 	testCube4->SetReflect(unreflectiveTex);
@@ -282,7 +282,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	testCube5->SetTransform(Matrix4::Translation(Vector3(5.0f, 0.0f, -30.0f)));
 	testCube5->SetColour(Vector4(1.0f, 1.0f, 1.0f, 1.0f));
 	testCube5->SetModelScale(Vector3(5.0f, 5.0f, 5.0f));
-	testCube5->SetBoundingRadius(2000.0f);
+	testCube5->SetBoundingRadius(6.0f);
 	testCube5->SetMesh(Mesh::LoadFromMeshFile("Cube.msh"));
 	testCube5->SetTexture(grassTex);
 	testCube5->SetReflect(unreflectiveTex);
@@ -293,7 +293,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	testCube6->SetTransform(Matrix4::Translation(Vector3(-5.0f, -0.5f, -30.0f)));
 	testCube6->SetColour(Vector4(1.0f, 1.0f, 1.0f, 1.0f));
 	testCube6->SetModelScale(Vector3(3.0f, 3.0f, 3.0f));
-	testCube6->SetBoundingRadius(2000.0f);
+	testCube6->SetBoundingRadius(6.0f);
 	testCube6->SetMesh(Mesh::LoadFromMeshFile("Cube.msh"));
 	testCube6->SetTexture(grassTex);
 	testCube6->SetReflect(unreflectiveTex);
@@ -304,7 +304,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	rotatingCube->SetTransform(Matrix4::Translation(Vector3(15.0f, 0.0f, -15.0f)));
 	rotatingCube->SetColour(Vector4(1.0f, 1.0f, 1.0f, 1.0f));
 	rotatingCube->SetModelScale(Vector3(4.0f, 4.0f, 4.0f));
-	rotatingCube->SetBoundingRadius(2000.0f);
+	rotatingCube->SetBoundingRadius(6.0f);
 	rotatingCube->SetMesh(Mesh::LoadFromMeshFile("Cube.msh"));
 	rotatingCube->SetTexture(earthTex);
 	rotatingCube->SetReflect(unreflectiveTex);

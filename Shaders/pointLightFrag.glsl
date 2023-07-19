@@ -62,7 +62,10 @@ void main(void) {
 
 	vec3 shadowViewDir = normalize( lightPos - worldPos.xyz );
 
-	vec4 pushVal = vec4( normal , 0) * dot( shadowViewDir , normal );
+	// default pushval multiplied by only dot product
+	// reduced pushval due to noticeable offset between surfaces due to large normal difference
+	vec4 pushVal = vec4( normal , 0) * dot( shadowViewDir , normal ) * 0.5f;
+	//vec4 pushVal = vec4( 0.0f, 0.0f, 0.0f, 0.0f );
 
 
 	float shadow = 1.0;
