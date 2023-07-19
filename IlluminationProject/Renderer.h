@@ -84,6 +84,8 @@ protected:
 
 	SceneNode* root;
 
+	SceneNode* rotatingCube;
+
 	void DrawSkybox();
 	Shader* skyboxShader;
 
@@ -215,4 +217,6 @@ protected:
 	// SSAO Storage
 	vector<Vector3> SSAOKernels;
 	vector<Vector3> SSAONoise;
+
+	float spinnyTime;
 };

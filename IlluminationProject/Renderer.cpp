@@ -22,6 +22,7 @@ const int SSAO_KERNEL_COUNT = 16;
 const unsigned int SHADOWSIZE = 2048;
 
 Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
+	spinnyTime = 0.0f;
 	sphere = Mesh::LoadFromMeshFile("Sphere.msh");
 	//cube = Mesh::LoadFromMeshFile("OffsetCubeY.msh");
 	quad = Mesh::GenerateQuad();
@@ -288,69 +289,16 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 
 	root->AddChild(testCube5);
 
-	//SceneNode* testCube6 = new SceneNode();
-	//testCube6->SetTransform(Matrix4::Translation(Vector3(0.0f, 2.5f, -50.0f)));
-	//testCube6->SetColour(Vector4(1.0f, 1.0f, 1.0f, 1.0f));
-	//testCube6->SetModelScale(Vector3(100.0f, 10.0f, 5.0f));
-	//testCube6->SetBoundingRadius(2000.0f);
-	//testCube6->SetMesh(Mesh::LoadFromMeshFile("Cube.msh"));
-	//testCube6->SetTexture(earthTex);
-	//testCube6->SetReflect(unreflectiveTex);
-	//
-	//root->AddChild(testCube6);
-	//
-	//SceneNode* testCube7 = new SceneNode();
-	//testCube7->SetTransform(Matrix4::Translation(Vector3(0.0f, 2.5f, 50.0f)));
-	//testCube7->SetColour(Vector4(1.0f, 1.0f, 1.0f, 1.0f));
-	//testCube7->SetModelScale(Vector3(100.0f, 10.0f, 5.0f));
-	//testCube7->SetBoundingRadius(2000.0f);
-	//testCube7->SetMesh(Mesh::LoadFromMeshFile("Cube.msh"));
-	//testCube7->SetTexture(earthTex);
-	//testCube7->SetReflect(unreflectiveTex);
-	//
-	//root->AddChild(testCube7);
-	//
-	//SceneNode* testCube8 = new SceneNode();
-	//testCube8->SetTransform(Matrix4::Translation(Vector3(50.0f, 2.5f, 0.0f)));
-	//testCube8->SetColour(Vector4(1.0f, 1.0f, 1.0f, 1.0f));
-	//testCube8->SetModelScale(Vector3(5.0f, 10.0f, 100.0f));
-	//testCube8->SetBoundingRadius(2000.0f);
-	//testCube8->SetMesh(Mesh::LoadFromMeshFile("Cube.msh"));
-	//testCube8->SetTexture(earthTex);
-	//testCube8->SetReflect(unreflectiveTex);
-	//
-	//root->AddChild(testCube8);
-	//
-	//SceneNode* testCube9 = new SceneNode();
-	//testCube9->SetTransform(Matrix4::Translation(Vector3(-50.0f, 2.5f, 0.0f)));
-	//testCube9->SetColour(Vector4(1.0f, 1.0f, 1.0f, 1.0f));
-	//testCube9->SetModelScale(Vector3(5.0f, 10.0f, 100.0f));
-	//testCube9->SetBoundingRadius(2000.0f);
-	//testCube9->SetMesh(Mesh::LoadFromMeshFile("Cube.msh"));
-	//testCube9->SetTexture(earthTex);
-	//testCube9->SetReflect(unreflectiveTex);
-	//
-	//root->AddChild(testCube9);
+	rotatingCube = new SceneNode();
+	rotatingCube->SetTransform(Matrix4::Translation(Vector3(15.0f, 0.0f, -15.0f)));
+	rotatingCube->SetColour(Vector4(1.0f, 1.0f, 1.0f, 1.0f));
+	rotatingCube->SetModelScale(Vector3(4.0f, 4.0f, 4.0f));
+	rotatingCube->SetBoundingRadius(2000.0f);
+	rotatingCube->SetMesh(Mesh::LoadFromMeshFile("Cube.msh"));
+	rotatingCube->SetTexture(earthTex);
+	rotatingCube->SetReflect(unreflectiveTex);
 
-	// animation test
-
-	//for (int i = 0; i < 10; i++) {
-	//	SceneNode* animationfather = new SceneNode();
-	//
-	//	AnimatedNode* skeleton = new AnimatedNode();
-	//
-	//	skeleton->SetTransform(Matrix4::Translation(Vector3((rand() % (int)(0.7 * heightmapSize.x)) + (0.15 * heightmapSize.x), 50.0f, (rand() % (int)(0.7 * heightmapSize.z)) + (0.15 * heightmapSize.z))));
-	//	skeleton->SetColour(Vector4(1.0f, 1.0f, 1.0f, 0.8f));
-	//	skeleton->SetModelScale(Vector3(600.0f, 600.0f, 600.0f));
-	//	skeleton->SetBoundingRadius(600.0f);
-	//	skeleton->SetMesh(animMesh);
-	//	skeleton->setAnim("skeleton.anm");
-	//	skeleton->setMat("skeleton.mat");
-	//
-	//	animationfather->AddChild(skeleton);
-	//
-	//	root->AddChild(animationfather);
-	//}
+	root->AddChild(rotatingCube);
 
 	glGenFramebuffers(1, &alphaFBO);
 	glGenFramebuffers(1, &alphaFBO_2);
@@ -729,6 +677,11 @@ void Renderer::GeneratePositionTexture(GLuint& into)
 void Renderer::UpdateScene(float dt) {
 	if (onRails) { railMovement(dt); }
 	else { activeCamera->UpdateCamera(dt); }
+
+	spinnyTime += dt;
+
+	rotatingCube->SetTransform(Matrix4::Translation(Vector3(15.0f, 0.0f, -15.0f)) * Matrix4::Rotation(spinnyTime * 10, Vector3(0, 1, 0)));
+
 	viewMatrix = activeCamera->BuildViewMatrix();
 	projMatrix = Matrix4::Perspective(1.0f, 1000.0f, (float)width / (float)height, 45.0f);
 	frameFrustum.FromMatrix(projMatrix * viewMatrix);
