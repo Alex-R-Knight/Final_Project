@@ -50,7 +50,7 @@ void main(void) {
 	vec3 halfDir = normalize(incident + viewDir);
 
 	float lambert = clamp(dot(incident, normal), 0.0, 1.0);
-	float rFactor = clamp(dot(halfDir, normal), 0.0, 1.0);
+	//float rFactor = clamp(dot(halfDir, normal), 0.0, 1.0);
 	float specFactor = clamp(dot(halfDir, normal), 0.0, 1.0);
 	specFactor = pow(specFactor, 60.0);
 	vec3 attenuated = lightColour.xyz * atten;
@@ -69,6 +69,10 @@ void main(void) {
 
 
 	// Oh boy its carpal tunnel time
+	float kernalVal = 1.0f / 9.0f;
+
+	vec2 texSize  = textureSize(shadowTex1, 0).xy;
+	vec2 fragIncrements = vec2(1/texSize.x, 1/texSize.y);
 
 
 ////// RUN 1
@@ -79,12 +83,20 @@ void main(void) {
 		abs ( shadowNDC . y ) < 1.0f &&
 		abs ( shadowNDC . z ) < 1.0f )
 	{
-		 vec3 biasCoord = shadowNDC * 0.5f + 0.5f;
-		 float shadowZ = texture ( shadowTex1 , biasCoord.xy ).x;
+		vec3 biasCoord = shadowNDC * 0.5f + 0.5f;
+		for (int y = -1; y < 2; y++)
+		{
+			for (int x = -1; x < 2; x++)
+			{
+				vec2 sampleCoord = (biasCoord.xy + vec2(x*fragIncrements.x, y*fragIncrements.y));
 
-		 if( shadowZ < biasCoord.z ) {
-			 shadow = 0.0f;
-		 }
+				float shadowZ = texture ( shadowTex1 , sampleCoord.xy ).x;
+
+				if( shadowZ < biasCoord.z ) {
+					 shadow -= kernalVal;
+				}
+			}
+		}
 	}
 //////
 
@@ -97,11 +109,19 @@ void main(void) {
 		abs ( shadowNDC . z ) < 1.0f )
 	{
 		 vec3 biasCoord = shadowNDC * 0.5f + 0.5f;
-		 float shadowZ = texture ( shadowTex2 , biasCoord.xy ).x;
+		for (int y = -1; y < 2; y++)
+		{
+			for (int x = -1; x < 2; x++)
+			{
+				vec2 sampleCoord = (biasCoord.xy + vec2(x*fragIncrements.x, y*fragIncrements.y));
 
-		 if( shadowZ < biasCoord.z ) {
-			 shadow = 0.0f;
-		 }
+				float shadowZ = texture ( shadowTex2 , sampleCoord.xy ).x;
+
+				if( shadowZ < biasCoord.z ) {
+					 shadow -= kernalVal;
+				}
+			}
+		}
 	}
 //////
 
@@ -113,12 +133,20 @@ void main(void) {
 		abs ( shadowNDC . y ) < 1.0f &&
 		abs ( shadowNDC . z ) < 1.0f )
 	{
-		 vec3 biasCoord = shadowNDC * 0.5f + 0.5f;
-		 float shadowZ = texture ( shadowTex3 , biasCoord.xy ).x;
+		vec3 biasCoord = shadowNDC * 0.5f + 0.5f;
+		for (int y = -1; y < 2; y++)
+		{
+			for (int x = -1; x < 2; x++)
+			{
+				vec2 sampleCoord = (biasCoord.xy + vec2(x*fragIncrements.x, y*fragIncrements.y));
 
-		 if( shadowZ < biasCoord.z ) {
-			 shadow = 0.0f;
-		 }
+				float shadowZ = texture ( shadowTex3 , sampleCoord.xy ).x;
+
+				if( shadowZ < biasCoord.z ) {
+					 shadow -= kernalVal;
+				}
+			}
+		}
 	}
 //////
 
@@ -130,12 +158,20 @@ void main(void) {
 		abs ( shadowNDC . y ) < 1.0f &&
 		abs ( shadowNDC . z ) < 1.0f )
 	{
-		 vec3 biasCoord = shadowNDC * 0.5f + 0.5f;
-		 float shadowZ = texture ( shadowTex4 , biasCoord.xy ).x;
+		vec3 biasCoord = shadowNDC * 0.5f + 0.5f;
+		for (int y = -1; y < 2; y++)
+		{
+			for (int x = -1; x < 2; x++)
+			{
+				vec2 sampleCoord = (biasCoord.xy + vec2(x*fragIncrements.x, y*fragIncrements.y));
 
-		 if( shadowZ < biasCoord.z ) {
-			 shadow = 0.0f;
-		 }
+				float shadowZ = texture ( shadowTex4 , sampleCoord.xy ).x;
+
+				if( shadowZ < biasCoord.z ) {
+					 shadow -= kernalVal;
+				}
+			}
+		}
 	}
 //////
 
@@ -147,12 +183,20 @@ void main(void) {
 		abs ( shadowNDC . y ) < 1.0f &&
 		abs ( shadowNDC . z ) < 1.0f )
 	{
-		 vec3 biasCoord = shadowNDC * 0.5f + 0.5f;
-		 float shadowZ = texture ( shadowTex5 , biasCoord.xy ).x;
+		vec3 biasCoord = shadowNDC * 0.5f + 0.5f;
+		for (int y = -1; y < 2; y++)
+		{
+			for (int x = -1; x < 2; x++)
+			{
+				vec2 sampleCoord = (biasCoord.xy + vec2(x*fragIncrements.x, y*fragIncrements.y));
 
-		 if( shadowZ < biasCoord.z ) {
-			 shadow = 0.0f;
-		 }
+				float shadowZ = texture ( shadowTex5 , sampleCoord.xy ).x;
+
+				if( shadowZ < biasCoord.z ) {
+					 shadow -= kernalVal;
+				}
+			}
+		}
 	}
 //////
 
@@ -164,12 +208,20 @@ void main(void) {
 		abs ( shadowNDC . y ) < 1.0f &&
 		abs ( shadowNDC . z ) < 1.0f )
 	{
-		 vec3 biasCoord = shadowNDC * 0.5f + 0.5f;
-		 float shadowZ = texture ( shadowTex6 , biasCoord.xy ).x;
+		vec3 biasCoord = shadowNDC * 0.5f + 0.5f;
+		for (int y = -1; y < 2; y++)
+		{
+			for (int x = -1; x < 2; x++)
+			{
+				vec2 sampleCoord = (biasCoord.xy + vec2(x*fragIncrements.x, y*fragIncrements.y));
 
-		 if( shadowZ < biasCoord.z ) {
-			 shadow = 0.0f;
-		 }
+				float shadowZ = texture ( shadowTex6 , sampleCoord.xy ).x;
+
+				if( shadowZ < biasCoord.z ) {
+					 shadow -= kernalVal;
+				}
+			}
+		}
 	}
 //////
 

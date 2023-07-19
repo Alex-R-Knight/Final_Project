@@ -289,6 +289,17 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 
 	root->AddChild(testCube5);
 
+	SceneNode* testCube6 = new SceneNode();
+	testCube6->SetTransform(Matrix4::Translation(Vector3(-5.0f, -0.5f, -30.0f)));
+	testCube6->SetColour(Vector4(1.0f, 1.0f, 1.0f, 1.0f));
+	testCube6->SetModelScale(Vector3(3.0f, 3.0f, 3.0f));
+	testCube6->SetBoundingRadius(2000.0f);
+	testCube6->SetMesh(Mesh::LoadFromMeshFile("Cube.msh"));
+	testCube6->SetTexture(grassTex);
+	testCube6->SetReflect(unreflectiveTex);
+
+	root->AddChild(testCube6);
+
 	rotatingCube = new SceneNode();
 	rotatingCube->SetTransform(Matrix4::Translation(Vector3(15.0f, 0.0f, -15.0f)));
 	rotatingCube->SetColour(Vector4(1.0f, 1.0f, 1.0f, 1.0f));

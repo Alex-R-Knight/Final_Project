@@ -388,10 +388,15 @@ void main(void) {
 	}
 	else {
 		vec4 baseColour = texture( baseTexture, uv.xy);
-		uvOutput = baseColour * 0.15;
-		uvOutput += baseColour * texture( lightTex, uv.xy );
+		uvOutput = baseColour * texture( lightTex, uv.xy );
 		uvOutput *= uv.b;
 		uvOutput.a = 1.0;
+
+		//vec4 baseColour = texture( baseTexture, uv.xy);
+		//uvOutput = baseColour * 0.15;
+		//uvOutput += baseColour * texture( lightTex, uv.xy );
+		//uvOutput *= uv.b;
+		//uvOutput.a = 1.0;
 	}
 	
 	debugOutput = vec4(noise, noise, noise, 1);
