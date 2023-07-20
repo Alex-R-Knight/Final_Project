@@ -304,7 +304,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	rotatingCube->SetTransform(Matrix4::Translation(Vector3(15.0f, 0.0f, -15.0f)));
 	rotatingCube->SetColour(Vector4(1.0f, 1.0f, 1.0f, 1.0f));
 	rotatingCube->SetModelScale(Vector3(4.0f, 4.0f, 4.0f));
-	rotatingCube->SetBoundingRadius(6.0f);
+	rotatingCube->SetBoundingRadius(100.0f);
 	rotatingCube->SetMesh(Mesh::LoadFromMeshFile("Cube.msh"));
 	rotatingCube->SetTexture(earthTex);
 	rotatingCube->SetReflect(unreflectiveTex);
@@ -469,7 +469,8 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 		for (int x = 0; x < 16; x++)
 		{
 			float noiseVal = IGN(x, y);
-			Vector3 newIGNVector = Vector3(noiseVal, noiseVal, noiseVal);
+			float noiseVal2 = IGN(y, x);
+			Vector3 newIGNVector = Vector3(noiseVal, noiseVal2, 0.0f);
 			IGNVector.push_back(newIGNVector);
 		}
 	}

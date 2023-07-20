@@ -104,16 +104,16 @@ void main(void) {
 
 	// Noise preparation
 	vec2 noiseScale = texSize / 16.0f;
-	float noise = texture(noiseTex, IN.texCoord * noiseScale).x;
+	vec2 noise = texture(noiseTex, IN.texCoord * noiseScale).xy;
 
-////// Unpacks and normalizes the ray direction for global illumination
+////// Creates and normalizes the ray direction for global illumination
 	
 	vec3 up = abs(worldNormal.z) < 0.999 ? vec3(0, 0, 1) : vec3(1, 0, 0);
     vec3 newTangent = normalize(cross(up, worldNormal));
     vec3 bitangent = cross(worldNormal, newTangent);
 
-	float theta = 2.0 * 3.14159 * noise;
-    float phi = acos(sqrt(noise));
+	float theta = 2.0 * 3.14159 * noise.x;
+    float phi = acos(sqrt(noise.y));
 
 	vec3 sampleDir = vec3(cos(theta) * sin(phi), sin(theta) * sin(phi), cos(phi));
 
@@ -399,7 +399,7 @@ void main(void) {
 		//uvOutput.a = 1.0;
 	}
 	
-	debugOutput = vec4(noise, noise, noise, 1);
+	debugOutput = vec4(noise.x, noise.y, 0.0f, 1);
 
 	debugOutput2 = vec4(hemisphereVectorDebugHolder, 1);
 
