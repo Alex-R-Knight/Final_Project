@@ -70,6 +70,9 @@ protected:
 	void SSAOProcess();
 	void SSAOBlurring();
 
+	// Edge blurring
+	void SobelProcess();
+
 
 	void BuildNodeLists(SceneNode* from);
 	void SortNodeLists();
@@ -114,6 +117,9 @@ protected:
 
 	// SSAO Shader
 	Shader* SSAOShader;
+
+	// Edge Shader
+	Shader* SobelDepthShader;
 
 	GLuint processFBO; //The FBO for post processing
 	GLuint processColourTex; //The texture for post processing
@@ -217,6 +223,10 @@ protected:
 	// SSAO Storage
 	vector<Vector3> SSAOKernels;
 	vector<Vector3> SSAONoise;
+
+	// Edge blurring Storage
+	GLuint edgeFBO;
+	GLuint edgeStorageTex;
 
 	float spinnyTime;
 };

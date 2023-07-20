@@ -157,6 +157,9 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	SSAOShader = new Shader("TexturedVertex.glsl",
 		"SSAOFrag.glsl");
 
+	SobelDepthShader = new Shader("TexturedVertex.glsl",
+		"processfrag_sobel_depth.glsl");
+
 	if (!sceneShader->LoadSuccess()			|| !pointlightShader->LoadSuccess()
 		|| !combineShader->LoadSuccess()	|| !skyboxShader->LoadSuccess()
 		|| !alphaShader->LoadSuccess()		|| !heightShader->LoadSuccess()
@@ -164,7 +167,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 		|| !blurShader->LoadSuccess()		|| !sobelShader->LoadSuccess()
 		|| !animatedshader->LoadSuccess()	|| !reflectionShader->LoadSuccess()
 		|| !shadowShader->LoadSuccess()		|| !illuminationShader->LoadSuccess()
-		|| !SSAOShader->LoadSuccess()		) {
+		|| !SSAOShader->LoadSuccess()		|| !SobelDepthShader->LoadSuccess()		) {
 		return;
 	}
 
@@ -323,6 +326,8 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 
 	glGenFramebuffers(1, &illuminationFBO);
 
+	glGenFramebuffers(1, &edgeFBO);
+
 	GLenum buffers[5] = {
 		GL_COLOR_ATTACHMENT0 ,
 		GL_COLOR_ATTACHMENT1 ,
@@ -350,8 +355,10 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 
 	GenerateScreenTexture(SSAOTex);
 
+	GenerateScreenTexture(edgeStorageTex);
+
 	GeneratePositionTexture(bufferViewSpacePosTex);
-	GenerateScreenTexture(debugStorageTex1);
+	GeneratePositionTexture(debugStorageTex1);
 	GeneratePositionTexture(debugStorageTex2);
 	GeneratePositionTexture(debugStorageTex3);
 
@@ -488,9 +495,8 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	//First camera alpha FBO
 	glBindFramebuffer(GL_FRAMEBUFFER, alphaFBO);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, alphaColourTex, 0);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, debugStorageTex1, 0);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, alphaDepthTex, 0);
-	glDrawBuffers(2, buffers);
+	glDrawBuffers(1, buffers);
 
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
 		return;
@@ -554,10 +560,19 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	}
 
 	//Preparing SSAO FBO
-	//Preparing ilumination FBO
 	glBindFramebuffer(GL_FRAMEBUFFER, SSAOFBO);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, SSAOTex, 0);
 	glDrawBuffers(1, buffers);
+
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+		return;
+	}
+
+	//Preparing Edge FBO
+	glBindFramebuffer(GL_FRAMEBUFFER, edgeFBO);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, edgeStorageTex, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, debugStorageTex1, 0);
+	glDrawBuffers(2, buffers);
 
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
 		return;
@@ -616,9 +631,14 @@ Renderer::~Renderer(void) {
 	glDeleteTextures(1, &lightDiffuseTex);
 	glDeleteTextures(1, &lightSpecularTex);
 
+	glDeleteTextures(1, &edgeStorageTex);
+
+
+	// Noise textures here
 	glDeleteTextures(1, &SSAONoiseTex);
 	glDeleteTextures(1, &illuminationNoiseTex);
 
+	// Debug textures here
 	glDeleteTextures(1, &bufferViewSpacePosTex);
 	glDeleteTextures(1, &debugStorageTex1);
 	glDeleteTextures(1, &debugStorageTex2);
@@ -635,6 +655,8 @@ Renderer::~Renderer(void) {
 	glDeleteFramebuffers(1, &illuminationFBO);
 
 	glDeleteFramebuffers(1, &SSAOFBO);
+
+	glDeleteFramebuffers(1, &edgeFBO);
 
 
 	for (const auto& i : shadowFBO)
@@ -944,6 +966,8 @@ void Renderer::RenderScene() {
 	ReflectionBlurring();
 
 	DrawAlphaMeshes();
+
+	SobelProcess();
 
 	ClearNodeLists();
 }
@@ -1544,4 +1568,32 @@ void Renderer::secondCameraBuffer() {
 float Renderer::IGN(int x, int y)
 {
 	return std::fmodf(52.9829189f * std::fmodf(0.06711056f * float(x) + 0.00583715f * float(y), 1.0f), 1.0f);
+}
+
+void Renderer::SobelProcess()
+{
+	glBindFramebuffer(GL_FRAMEBUFFER, edgeFBO);
+	BindShader(SobelDepthShader);
+
+	glClearColor(0, 0, 0, 1);
+
+	glClear(GL_COLOR_BUFFER_BIT);
+
+	modelMatrix.ToIdentity();
+	viewMatrix.ToIdentity();
+	projMatrix.ToIdentity();
+	UpdateShaderMatrices();
+
+	glDisable(GL_DEPTH_TEST);
+
+	glUniform1i(glGetUniformLocation(SobelDepthShader->GetProgram(), "depthTex"), 0);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, bufferDepthTex);
+
+	quad->Draw();
+
+	glClearColor(0.2f, 0.2f, 0.2f, 1);
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glEnable(GL_DEPTH_TEST);
 }

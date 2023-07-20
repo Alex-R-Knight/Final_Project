@@ -63,7 +63,7 @@ in Vertex{
 } IN;
 
 out vec4 fragColour;
-out vec4 fragColour2;
+//out vec4 fragColour2;
 
 void main(void) {
 	vec3 diffuse = texture(diffuseTex, IN.texCoord).xyz;
@@ -82,14 +82,14 @@ void main(void) {
 
 
 	//  difference test
-	fragColour2.xyz = diffuse * 0.15 * SSAOVal; // ambient
-	fragColour2.xyz += diffuse * light; // lambert
-	fragColour2.xyz += specular; // Specular
+	//fragColour2.xyz = diffuse * 0.15 * SSAOVal; // ambient
+	//fragColour2.xyz += diffuse * light; // lambert
+	//fragColour2.xyz += specular; // Specular
 
 	if (texture(diffuseTex, IN.texCoord).a != 1.0) {
 		fragColour = vec4(diffuse.xyz, 1.0);
 
-		fragColour2 = vec4(diffuse.xyz, 1.0);
+		//fragColour2 = vec4(diffuse.xyz, 1.0);
 	}
 
 	//if (texture(diffuseTex, IN.texCoord).a < 0.95) {
@@ -97,5 +97,5 @@ void main(void) {
 	//}
 
 	fragColour.a = 1.0;
-	fragColour2.a = 1.0;
+	//fragColour2.a = 1.0;
 }
