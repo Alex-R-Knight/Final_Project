@@ -573,7 +573,8 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	//Preparing Edge FBO
 	glBindFramebuffer(GL_FRAMEBUFFER, edgeFBO);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, edgeStorageTex, 0);
-	glDrawBuffers(1, buffers);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, debugStorageTex1, 0);
+	glDrawBuffers(2, buffers);
 
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
 		return;
