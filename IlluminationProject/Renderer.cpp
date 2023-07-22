@@ -15,6 +15,8 @@ const int ILLUMINATION_BLUR_PASSES = 10;
 
 const int SSAO_BLUR_PASSES = 2;
 
+const int POST_SOBEL_BLUR_PASSES = 1;
+
 // MUST BE CHANGED IN "SSAOFrag.glsl" AS WELL
 const int SSAO_KERNEL_COUNT = 16;
 
@@ -571,8 +573,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	//Preparing Edge FBO
 	glBindFramebuffer(GL_FRAMEBUFFER, edgeFBO);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, edgeStorageTex, 0);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, debugStorageTex1, 0);
-	glDrawBuffers(2, buffers);
+	glDrawBuffers(1, buffers);
 
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
 		return;
@@ -968,6 +969,7 @@ void Renderer::RenderScene() {
 	DrawAlphaMeshes();
 
 	SobelProcess();
+	SobelBlurring();
 
 	ClearNodeLists();
 }
@@ -1497,7 +1499,14 @@ void Renderer::DrawToScreen() {
 	glUniform1i(glGetUniformLocation(endshader->GetProgram(), "reflectivity"), 2);
 	glActiveTexture(GL_TEXTURE2);
 	glBindTexture(GL_TEXTURE_2D, reflectionBufferTex);
-	
+
+	glUniform1i(glGetUniformLocation(endshader->GetProgram(), "blurTex"), 3);
+	glActiveTexture(GL_TEXTURE3);
+	glBindTexture(GL_TEXTURE_2D, bufferColourTex);
+
+	glUniform1i(glGetUniformLocation(endshader->GetProgram(), "sobelTex"), 4);
+	glActiveTexture(GL_TEXTURE4);
+	glBindTexture(GL_TEXTURE_2D, edgeStorageTex);	
 	
 
 	quad->Draw();
@@ -1590,10 +1599,44 @@ void Renderer::SobelProcess()
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, bufferDepthTex);
 
+	glUniform1i(glGetUniformLocation(SobelDepthShader->GetProgram(), "normalTex"), 1);
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, bufferNormalTex);
+
 	quad->Draw();
 
 	glClearColor(0.2f, 0.2f, 0.2f, 1);
 
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glEnable(GL_DEPTH_TEST);
+}
+
+void Renderer::SobelBlurring()
+{
+	glBindFramebuffer(GL_FRAMEBUFFER, processFBO);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, processColourTex, 0);
+	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+	BindShader(blurShader);
+
+	modelMatrix.ToIdentity();
+	viewMatrix.ToIdentity();
+	projMatrix.ToIdentity();
+	UpdateShaderMatrices();
+
+	glDisable(GL_DEPTH_TEST);
+
+	glActiveTexture(GL_TEXTURE0);
+	glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "sceneTex"), 0);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, processColourTex, 0);
+		glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "isVertical"), 0);
+
+		glBindTexture(GL_TEXTURE_2D, alphaColourTex);
+		quad->Draw();
+		//Now to swap the colour buffers , and do the second blur pass
+		glUniform1i(glGetUniformLocation(currentShader->GetProgram(), "isVertical"), 1);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, bufferColourTex, 0);
+		glBindTexture(GL_TEXTURE_2D, processColourTex);
+		quad->Draw();
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glEnable(GL_DEPTH_TEST);
 }

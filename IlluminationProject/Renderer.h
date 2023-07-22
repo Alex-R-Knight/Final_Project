@@ -72,6 +72,7 @@ protected:
 
 	// Edge blurring
 	void SobelProcess();
+	void SobelBlurring();
 
 
 	void BuildNodeLists(SceneNode* from);
