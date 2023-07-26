@@ -214,8 +214,8 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 		Light& l = pointLights[i];
 		l.SetPosition(Vector3(newlocation.x, newlocation.y, newlocation.z));
 
-		l.SetColour(Vector4(0.5f + (float)(rand() / (float)RAND_MAX), 0.5f + (float)(rand() / (float)RAND_MAX), 0.5f + (float)(rand() / (float)RAND_MAX), 200000));
-		l.SetRadius(50.0f);
+		l.SetColour(Vector4(0.5f + (float)(rand() / (float)RAND_MAX), 0.5f + (float)(rand() / (float)RAND_MAX), 0.5f + (float)(rand() / (float)RAND_MAX), 2000));
+		l.SetRadius(75.0f);
 		//l.SetRadius(50.0f + (rand() % 30));
 
 	}
@@ -980,7 +980,7 @@ void Renderer::RenderScene() {
 	FillBuffers();
 	DrawPointLights();
 	// Dont forget to toggle me as needed
-	//DrawVirtualPointLights();
+	DrawVirtualPointLights();
 
 	// SSAO
 	SSAOProcess();
@@ -1227,9 +1227,17 @@ void Renderer::DrawVirtualPointLights()
 				float radiusDifference = realLightRadius - lightDistance;
 				maxRadius = (radiusDifference > maxRadius) ? radiusDifference : maxRadius;
 
-				float attenuation = 1.0 - (lightDistance / realLightRadius);
-
 				Vector4 sourceLightColourVec4 = l.GetColour();
+
+				// Attenuation methods
+				//float attenuation = 1.0 - (lightDistance / realLightRadius);
+
+				float RadiusAtten = 1.0 - (lightDistance / realLightRadius);
+				float invSqrAtten = sourceLightColourVec4.w / (lightDistance * lightDistance);
+
+				float attenuation = RadiusAtten * invSqrAtten;
+
+				attenuation = (attenuation < 1.0f) ? attenuation : 1.0f;
 
 				colourValues += Vector3(sourceLightColourVec4.x, sourceLightColourVec4.y, sourceLightColourVec4.z) * attenuation;
 			}
@@ -1248,7 +1256,7 @@ void Renderer::DrawVirtualPointLights()
 	glClearColor(0, 0, 0, 1);
 
 	// Dont forget to disable me for normal usage
-	//glClear(GL_COLOR_BUFFER_BIT);
+	glClear(GL_COLOR_BUFFER_BIT);
 
 	glBlendFunc(GL_ONE, GL_ONE);
 
@@ -1279,11 +1287,12 @@ void Renderer::DrawVirtualPointLights()
 		Vector3 virtualPointLightPosition = virtualPointLights[i];
 		glUniform3fv(glGetUniformLocation(virtualPointlightShader->GetProgram(), "lightPos"), 1, (float*)&virtualPointLightPosition);
 
-		Vector4 virtualPointLightColour = Vector4(virtualPointLightsColour[i].x, virtualPointLightsColour[i].y, virtualPointLightsColour[i].z, 1.0f);
+		Vector4 virtualPointLightColour = Vector4(virtualPointLightsColour[i].x, virtualPointLightsColour[i].y, virtualPointLightsColour[i].z, 300.0f);
 		glUniform4fv(glGetUniformLocation(virtualPointlightShader->GetProgram(), "lightColour"), 1, (float*)&virtualPointLightColour);
 
 		float virtualPointLightRadius = virtualPointLightsRadius[i];
-		glUniform1f(glGetUniformLocation(virtualPointlightShader->GetProgram(), "lightRadius"), virtualPointLightRadius);
+		//glUniform1f(glGetUniformLocation(virtualPointlightShader->GetProgram(), "lightRadius"), virtualPointLightRadius);
+		glUniform1f(glGetUniformLocation(virtualPointlightShader->GetProgram(), "lightRadius"), 25.0f);
 
 		UpdateShaderMatrices();
 

@@ -38,7 +38,15 @@ void main(void) {
 	vec3 worldPos = invClipPos.xyz / invClipPos.w;
 
 	float dist = length(lightPos - worldPos);
-	float atten = 1.0 - clamp ( dist / lightRadius , 0.0 , 1.0);
+	
+	//float atten = 1.0 - clamp ( dist / lightRadius , 0.0 , 1.0);
+	// Attenuation testing
+
+
+	float RadiusAtten = 1.0 - clamp( dist / lightRadius , 0.0 , 1.0);
+	float invSqrAtten = lightColour.w / (dist*dist);
+
+	float atten = clamp( RadiusAtten * invSqrAtten , 0.0 , 1.0);
 
 	if (atten == 0.0) {
 		discard;
