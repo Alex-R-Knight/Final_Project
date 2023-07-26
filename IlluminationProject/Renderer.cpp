@@ -23,6 +23,17 @@ const int SSAO_KERNEL_COUNT = 16;
 // Deferred shadowmapping
 const unsigned int SHADOWSIZE = 2048;
 
+// Virtual Point Lighting Parameters
+const Vector3 virtualLightStartPos = Vector3(0.0f, 0.0f, 0.0f);
+
+const int virtualLightRowsHorizontal = 5;
+
+const int virtualLightSpreadHorizontal = 50;
+
+const int virtualLightRowsVertical = 1;
+
+const int virtualLightSpreadVertical = 0;
+
 Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	spinnyTime = 0.0f;
 	sphere = Mesh::LoadFromMeshFile("Sphere.msh");
@@ -114,6 +125,9 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 
 	pointLights = new Light[LIGHT_NUM];
 
+
+	// Virtual Point Light count
+
 	heightShader = new Shader("BumpVertex.glsl", // reused!
 		"bufferIGNFragment_HeightMap.glsl");
 
@@ -162,6 +176,9 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	SobelDepthShader = new Shader("TexturedVertex.glsl",
 		"processfrag_sobel_depth.glsl");
 
+	virtualPointlightShader = new Shader("pointlightvert.glsl",
+		"virtualPointlightfrag.glsl");
+
 	if (!sceneShader->LoadSuccess()			|| !pointlightShader->LoadSuccess()
 		|| !combineShader->LoadSuccess()	|| !skyboxShader->LoadSuccess()
 		|| !alphaShader->LoadSuccess()		|| !heightShader->LoadSuccess()
@@ -169,7 +186,8 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 		|| !blurShader->LoadSuccess()		|| !sobelShader->LoadSuccess()
 		|| !animatedshader->LoadSuccess()	|| !reflectionShader->LoadSuccess()
 		|| !shadowShader->LoadSuccess()		|| !illuminationShader->LoadSuccess()
-		|| !SSAOShader->LoadSuccess()		|| !SobelDepthShader->LoadSuccess()		) {
+		|| !SSAOShader->LoadSuccess()		|| !SobelDepthShader->LoadSuccess()	
+		|| !virtualPointlightShader->LoadSuccess()									) {
 		return;
 	}
 
@@ -187,20 +205,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 		matTextures.emplace_back(texID);
 	}
 
-	//for (int i = 0; i < 100; i++) {
-	//	SceneNode* treenode = new SceneNode();
-	//	treenode->SetColour(Vector4(1.0f, 1.0f, 1.0f, 1.0f));
-	//	treenode->SetTransform(Matrix4::Translation(Vector3((rand() % (int)(0.7 * heightmapSize.x)) + (0.15 * heightmapSize.x), 50.0f, (rand() % (int)(0.7 * heightmapSize.z)) + (0.15 * heightmapSize.z))));
-	//	treenode->SetModelScale(Vector3(25.0f, 35.0f, 25.0f));
-	//	treenode->SetBoundingRadius(1000.0f);
-	//	treenode->SetMesh(tree);
-	//
-	//	for (int i = 0; i < tree->GetSubMeshCount(); ++i) {
-	//		treenode->SetTexture(matTextures[i]);
-	//	}
-	//
-	//	root->AddChild(treenode);
-	//}
+	// Real Point Lights
 
 	for (int i = 0; i < LIGHT_NUM; i++) {
 
@@ -213,6 +218,28 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 		l.SetRadius(50.0f);
 		//l.SetRadius(50.0f + (rand() % 30));
 
+	}
+
+
+	// Virtual Point Light Distribution
+
+	float VPLStartOffsetVal = virtualLightSpreadHorizontal - (virtualLightSpreadHorizontal / virtualLightRowsHorizontal);
+	Vector3 VPLStartOffset = Vector3(VPLStartOffsetVal, 0.0f, VPLStartOffsetVal);
+	float VPLIncrementHorizontal = 2 * (virtualLightSpreadHorizontal / virtualLightRowsHorizontal);
+
+	int VPLIterationCounter = 0;
+
+	for (int i = 0; i < virtualLightRowsHorizontal; i++) // X
+	{
+		for (int j = 0; j < virtualLightRowsHorizontal; j++) // Z
+		{
+			Vector3 newVPLLocation = (virtualLightStartPos - VPLStartOffset) + Vector3(i * VPLIncrementHorizontal, 0.0f, j * VPLIncrementHorizontal);
+
+			virtualPointLights.push_back(newVPLLocation);
+			virtualPointLightsColour.push_back(Vector3(0.0f, 0.0f, 0.0f));
+			virtualPointLightsRadius.push_back(0.0f);
+
+		}
 	}
 
 	//SceneNode* statue = new SceneNode();
@@ -1114,6 +1141,139 @@ void Renderer::DrawPointLights() {
 
 
 		glUniformMatrix4fv(glGetUniformLocation(pointlightShader->GetProgram(), "shadowMatrix"), 6, false, (float*)ShadowVPMatrices.data() );
+
+		UpdateShaderMatrices();
+
+		sphere->Draw();
+	}
+
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glCullFace(GL_BACK);
+	glDepthFunc(GL_LEQUAL);
+
+	glDepthMask(GL_TRUE);
+
+	glClearColor(0.2f, 0.2f, 0.2f, 1);
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+void Renderer::DrawVirtualPointLights()
+{
+	// VPL Occlusion and Light Data Management
+
+	for (int i = 0; i < virtualPointLights.size(); i++)
+	{
+		Vector3 VPLWorldPosition = virtualPointLights[i];
+		Vector4 VPLWorldPositionVec4 = Vector4(VPLWorldPosition.x, VPLWorldPosition.y, VPLWorldPosition.z, 1.0f);
+
+		Vector3 colourValues = Vector3(0.0f, 0.0f, 0.0f);
+
+		float maxRadius = 0.0f;
+
+		for (int j = 0; j < LIGHT_NUM; ++j)
+		{
+			Light& l = pointLights[j];
+
+			// Is hit bool
+			bool withinRealLight = false;
+
+			// Distance checks
+			float lightDistance = (VPLWorldPosition - l.GetPosition()).Length();
+			float realLightRadius = l.GetRadius();
+
+			// If beyond light radius, skip
+			if (lightDistance > realLightRadius)
+			{
+				continue;
+			}
+
+			// Per-shadowmap test
+			for (int sixth = 0; sixth < 6; sixth++)
+			{
+				Matrix4 LightShadowTransform = shadowTransforms[j][sixth];
+
+				Vector4 virtshadowProj = shadowProj * LightShadowTransform * VPLWorldPositionVec4;
+
+				Vector3 shadowNDC = Vector3(virtshadowProj.x, virtshadowProj.y, virtshadowProj.z) / virtshadowProj.w;
+				if (abs(shadowNDC.x) < 1.0f &&
+					abs(shadowNDC.y) < 1.0f &&
+					abs(shadowNDC.z) < 1.0f)
+				{
+					Vector3 biasCoord = (shadowNDC * 0.5f) + Vector3(0.5f, 0.5f, 0.5f);
+
+					float depthVal;
+
+					glBindFramebuffer(GL_FRAMEBUFFER, shadowFBO[j][sixth]);
+					glReadBuffer(GL_DEPTH_ATTACHMENT);
+					glReadPixels(biasCoord.x, biasCoord.y, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &depthVal);
+
+					if (depthVal > biasCoord.z) {
+						withinRealLight = true;
+						break;
+					}
+				}
+			}
+
+			if (withinRealLight)
+			{
+				// Update virtual light radius if this light has greater impact
+				float radiusDifference = realLightRadius - lightDistance;
+				maxRadius = (radiusDifference > maxRadius) ? radiusDifference : maxRadius;
+
+				float attenuation = 1.0 - (lightDistance / realLightRadius);
+
+				Vector4 sourceLightColourVec4 = l.GetColour();
+
+				colourValues += Vector3(sourceLightColourVec4.x, sourceLightColourVec4.y, sourceLightColourVec4.z) * attenuation;
+			}
+		}
+		// Apply calculated values to vectors
+		virtualPointLightsColour[i] = colourValues;
+		virtualPointLightsRadius[i] = maxRadius;
+	}
+
+
+	// Drawing virtual point lights
+
+	glBindFramebuffer(GL_FRAMEBUFFER, pointLightFBO);
+	BindShader(virtualPointlightShader);
+
+	glClearColor(0, 0, 0, 1);
+	glClear(GL_COLOR_BUFFER_BIT);
+	glBlendFunc(GL_ONE, GL_ONE);
+	glCullFace(GL_FRONT);
+	glDepthFunc(GL_ALWAYS);
+	glDepthMask(GL_FALSE);
+
+	glUniform1i(glGetUniformLocation(virtualPointlightShader->GetProgram(), "depthTex"), 0);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, bufferDepthTex);
+
+	glUniform1i(glGetUniformLocation(virtualPointlightShader->GetProgram(), "normTex"), 1);
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, bufferNormalTex);
+
+
+	glUniform3fv(glGetUniformLocation(virtualPointlightShader->GetProgram(), "cameraPos"), 1, (float*)&activeCamera->GetPosition());
+
+	glUniform2f(glGetUniformLocation(virtualPointlightShader->GetProgram(), "pixelSize"), 1.0f / width, 1.0f / height);
+
+	Matrix4 invViewProj = (projMatrix * viewMatrix).Inverse();
+	glUniformMatrix4fv(glGetUniformLocation(virtualPointlightShader->GetProgram(), "inverseProjView"), 1, false, invViewProj.values);
+
+	UpdateShaderMatrices();
+
+	for (int i = 0; i < virtualPointLights.size(); ++i) {
+
+		Vector3 virtualPointLightPosition = virtualPointLights[i];
+		glUniform3fv(glGetUniformLocation(virtualPointlightShader->GetProgram(), "lightPos"), 1, (float*)&virtualPointLightPosition);
+
+		Vector4 virtualPointLightColour = Vector4(virtualPointLightsColour[i].x, virtualPointLightsColour[i].y, virtualPointLightsColour[i].z, 1.0f);
+		glUniform4fv(glGetUniformLocation(virtualPointlightShader->GetProgram(), "lightColour"), 1, (float*)&virtualPointLightColour);
+
+		float virtualPointLightRadius = virtualPointLightsRadius[i];
+		glUniform1f(glGetUniformLocation(virtualPointlightShader->GetProgram(), "lightRadius"), virtualPointLightRadius);
 
 		UpdateShaderMatrices();
 

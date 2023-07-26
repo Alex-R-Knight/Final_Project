@@ -52,6 +52,8 @@ protected:
 	void DrawPointLights(); // Lighting Render Pass
 	void CombineBuffers(); // Combination Render Pass
 
+	void DrawVirtualPointLights(); // Extra Lighting Render Pass
+
 	void DrawAlphaMeshes(); //Draw transparent meshes after
 
 	// Screenspace reflections
@@ -121,6 +123,9 @@ protected:
 
 	// Edge Shader
 	Shader* SobelDepthShader;
+
+	// Virtual Point Light
+	Shader* virtualPointlightShader;
 
 	GLuint processFBO; //The FBO for post processing
 	GLuint processColourTex; //The texture for post processing
@@ -228,6 +233,11 @@ protected:
 	// Edge blurring Storage
 	GLuint edgeFBO;
 	GLuint edgeStorageTex;
+
+	// Virtual Point Lighting
+	vector<Vector3> virtualPointLights; // Array of VPL positions
+	vector<Vector3> virtualPointLightsColour; // Array of VPL colour values
+	vector<float>	virtualPointLightsRadius; // Radius of lights
 
 	float spinnyTime;
 };

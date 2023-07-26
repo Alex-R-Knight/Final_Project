@@ -83,8 +83,8 @@ void main(void) {
 
 	vec3 shadowNDC = shadowProj.xyz / shadowProj.w;
 	if( abs ( shadowNDC.x ) < 1.0f &&
-		abs ( shadowNDC . y ) < 1.0f &&
-		abs ( shadowNDC . z ) < 1.0f )
+		abs ( shadowNDC.y ) < 1.0f &&
+		abs ( shadowNDC.z ) < 1.0f )
 	{
 		vec3 biasCoord = shadowNDC * 0.5f + 0.5f;
 		for (int y = -1; y < 2; y++)
