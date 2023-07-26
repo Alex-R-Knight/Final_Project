@@ -979,6 +979,7 @@ void Renderer::RenderScene() {
 
 	FillBuffers();
 	DrawPointLights();
+	DrawVirtualPointLights();
 
 	// SSAO
 	SSAOProcess();
@@ -1240,7 +1241,7 @@ void Renderer::DrawVirtualPointLights()
 	BindShader(virtualPointlightShader);
 
 	glClearColor(0, 0, 0, 1);
-	glClear(GL_COLOR_BUFFER_BIT);
+	//glClear(GL_COLOR_BUFFER_BIT);
 	glBlendFunc(GL_ONE, GL_ONE);
 	glCullFace(GL_FRONT);
 	glDepthFunc(GL_ALWAYS);
