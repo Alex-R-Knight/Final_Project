@@ -4,6 +4,9 @@ uniform sampler2D depthTex;
 
 uniform sampler2D normalTex;
 
+//Toggle me if idea is failure
+uniform sampler2D lightColourTex;
+
 in Vertex{
 vec2 texCoord;
 } IN;
@@ -63,9 +66,13 @@ void main(void) {
 	float xGradientLength = length(xGradient);
 	float yGradientLength = length(yGradient);
 
+	// Lighting check
+	float light = length(texture2D(lightColourTex, IN.texCoord.xy).xyz);
+
+	vec4 lightvec4 = texture2D(lightColourTex, IN.texCoord.xy);
+
 	// Final result
-	fragColor = (magnitude > depthThreshold || xGradientLength > normalThreshold || yGradientLength > normalThreshold) ? vec4(1.0) : vec4(0.0);
+	fragColor = (magnitude > depthThreshold || xGradientLength > normalThreshold || yGradientLength > normalThreshold) ? vec4(1.0, light, 0.0f, 1.0f) : vec4(0.0);
 
-
-	fragColor2 = vec4(yGradientLength, yGradientLength, yGradientLength, 1.0f);
+	fragColor2 = lightvec4;
 }

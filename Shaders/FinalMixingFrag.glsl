@@ -26,9 +26,17 @@ void main(void) {
 
 	vec4 blurColour		= texture(blurTex,		IN.texCoord);
 
-	float sobelVal		= texture(sobelTex,		IN.texCoord).r;
+	//float sobelVal		= texture(sobelTex,		IN.texCoord).r;
+	vec2 sobelVal		= texture(sobelTex,		IN.texCoord).xy;
 	
-	fragColour			= ( reflectivity <= 0.0 || sobelVal == 1.0 ) ? mix(baseColour, blurColour, sobelVal) : mix( texture(diffuseTex, IN.texCoord), reflectColour, 0.5 );
+	//fragColour			= ( reflectivity <= 0.0 || sobelVal == 1.0 ) ? mix(baseColour, blurColour, sobelVal) : mix( texture(diffuseTex, IN.texCoord), reflectColour, 0.5 );
+
+	vec4 endReflectiveColour = mix( texture(diffuseTex, IN.texCoord), reflectColour, 0.5 );
+
+	vec4 unreflectiveColour = (sobelVal.x == 1.0) ? mix(blurColour, baseColour, 0.5*sobelVal.y) : baseColour;
+
+	fragColour			= ( reflectivity <= 0.0 ) ? unreflectiveColour : endReflectiveColour;
+
 
 	//fragColour			= ( reflectivity <= 0.0 ) ? texture(diffuseTex,	IN.texCoord) : mix( texture(diffuseTex,	IN.texCoord), reflectColour, 0.5 );
 

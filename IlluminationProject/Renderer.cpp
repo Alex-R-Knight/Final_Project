@@ -979,7 +979,8 @@ void Renderer::RenderScene() {
 
 	FillBuffers();
 	DrawPointLights();
-	DrawVirtualPointLights();
+	// Dont forget to toggle me as needed
+	//DrawVirtualPointLights();
 
 	// SSAO
 	SSAOProcess();
@@ -1209,7 +1210,11 @@ void Renderer::DrawVirtualPointLights()
 					glReadBuffer(GL_DEPTH_ATTACHMENT);
 					glReadPixels(biasCoord.x, biasCoord.y, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &depthVal);
 
+					std::cout << "depthval = " << depthVal << "\n";
+					std::cout << "biasCoord = " << biasCoord.z << "\n";
+
 					if (depthVal > biasCoord.z) {
+						std::cout << "within light\n";
 						withinRealLight = true;
 						break;
 					}
@@ -1241,8 +1246,12 @@ void Renderer::DrawVirtualPointLights()
 	BindShader(virtualPointlightShader);
 
 	glClearColor(0, 0, 0, 1);
+
+	// Dont forget to disable me for normal usage
 	//glClear(GL_COLOR_BUFFER_BIT);
+
 	glBlendFunc(GL_ONE, GL_ONE);
+
 	glCullFace(GL_FRONT);
 	glDepthFunc(GL_ALWAYS);
 	glDepthMask(GL_FALSE);
@@ -1764,6 +1773,10 @@ void Renderer::SobelProcess()
 	glUniform1i(glGetUniformLocation(SobelDepthShader->GetProgram(), "normalTex"), 1);
 	glActiveTexture(GL_TEXTURE1);
 	glBindTexture(GL_TEXTURE_2D, bufferNormalTex);
+
+	glUniform1i(glGetUniformLocation(SobelDepthShader->GetProgram(), "lightColourTex"), 2);
+	glActiveTexture(GL_TEXTURE2);
+	glBindTexture(GL_TEXTURE_2D, lightDiffuseTex);
 
 	quad->Draw();
 
