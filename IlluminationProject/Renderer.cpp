@@ -1256,7 +1256,7 @@ void Renderer::DrawVirtualPointLights()
 	glClearColor(0, 0, 0, 1);
 
 	// Dont forget to disable me for normal usage
-	glClear(GL_COLOR_BUFFER_BIT);
+	//glClear(GL_COLOR_BUFFER_BIT);
 
 	glBlendFunc(GL_ONE, GL_ONE);
 
@@ -1287,7 +1287,7 @@ void Renderer::DrawVirtualPointLights()
 		Vector3 virtualPointLightPosition = virtualPointLights[i];
 		glUniform3fv(glGetUniformLocation(virtualPointlightShader->GetProgram(), "lightPos"), 1, (float*)&virtualPointLightPosition);
 
-		Vector4 virtualPointLightColour = Vector4(virtualPointLightsColour[i].x, virtualPointLightsColour[i].y, virtualPointLightsColour[i].z, 300.0f);
+		Vector4 virtualPointLightColour = Vector4(virtualPointLightsColour[i].x, virtualPointLightsColour[i].y, virtualPointLightsColour[i].z, 20.0f);
 		glUniform4fv(glGetUniformLocation(virtualPointlightShader->GetProgram(), "lightColour"), 1, (float*)&virtualPointLightColour);
 
 		float virtualPointLightRadius = virtualPointLightsRadius[i];
