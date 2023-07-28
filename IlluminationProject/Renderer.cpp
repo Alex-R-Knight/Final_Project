@@ -1256,7 +1256,7 @@ void Renderer::DrawVirtualPointLights()
 	glClearColor(0, 0, 0, 1);
 
 	// Dont forget to disable me for normal usage
-	//glClear(GL_COLOR_BUFFER_BIT);
+	glClear(GL_COLOR_BUFFER_BIT);
 
 	glBlendFunc(GL_ONE, GL_ONE);
 

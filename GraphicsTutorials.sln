@@ -101,6 +101,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Shaders", "Shaders", "{E566
 		Shaders\TexturedVertex.glsl = Shaders\TexturedVertex.glsl
 		Shaders\Texture_ColourFragment.glsl = Shaders\Texture_ColourFragment.glsl
 		Shaders\Texture_ColourVertex.glsl = Shaders\Texture_ColourVertex.glsl
+		Shaders\virtualPointLightFrag.glsl = Shaders\virtualPointLightFrag.glsl
 		Shaders\zxFragment.glsl = Shaders\zxFragment.glsl
 		Shaders\zxVertex.glsl = Shaders\zxVertex.glsl
 	EndProjectSection

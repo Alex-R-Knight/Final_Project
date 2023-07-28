@@ -33,7 +33,7 @@ void main(void) {
 
 	vec4 endReflectiveColour = mix( texture(diffuseTex, IN.texCoord), reflectColour, 0.5 );
 
-	vec4 unreflectiveColour = (sobelVal.x == 1.0) ? mix(blurColour, baseColour, 0.5*sobelVal.y) : baseColour;
+	vec4 unreflectiveColour = (sobelVal.x == 1.0) ? mix(blurColour, baseColour, 0.25*sobelVal.y) : baseColour;
 
 	fragColour			= ( reflectivity <= 0.0 ) ? unreflectiveColour : endReflectiveColour;
 
