@@ -980,7 +980,7 @@ void Renderer::RenderScene() {
 	FillBuffers();
 	DrawPointLights();
 	// Dont forget to toggle me as needed
-	DrawVirtualPointLights();
+	//DrawVirtualPointLights();
 
 	// SSAO
 	SSAOProcess();
