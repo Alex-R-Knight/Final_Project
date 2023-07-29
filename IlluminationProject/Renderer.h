@@ -54,6 +54,9 @@ protected:
 
 	void DrawVirtualPointLights(); // Extra Lighting Render Pass
 
+	void DrawPointLightsRaymarched(); // Lighting Render Pass with Screen Space Shadows
+
+
 	void DrawAlphaMeshes(); //Draw transparent meshes after
 
 	// Screenspace reflections
@@ -126,6 +129,9 @@ protected:
 
 	// Virtual Point Light
 	Shader* virtualPointlightShader;
+
+	// Point Lights with Screen Space Shadows
+	Shader* pointlightRaymarchShader; // Shader to calculate lighting
 
 	GLuint processFBO; //The FBO for post processing
 	GLuint processColourTex; //The texture for post processing

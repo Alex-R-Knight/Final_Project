@@ -179,6 +179,9 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	virtualPointlightShader = new Shader("pointlightvert.glsl",
 		"virtualPointlightfrag.glsl");
 
+	pointlightRaymarchShader = new Shader("pointlightvert.glsl",
+		"pointlightRaymarchFrag.glsl");
+
 	if (!sceneShader->LoadSuccess()			|| !pointlightShader->LoadSuccess()
 		|| !combineShader->LoadSuccess()	|| !skyboxShader->LoadSuccess()
 		|| !alphaShader->LoadSuccess()		|| !heightShader->LoadSuccess()
@@ -187,7 +190,8 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 		|| !animatedshader->LoadSuccess()	|| !reflectionShader->LoadSuccess()
 		|| !shadowShader->LoadSuccess()		|| !illuminationShader->LoadSuccess()
 		|| !SSAOShader->LoadSuccess()		|| !SobelDepthShader->LoadSuccess()	
-		|| !virtualPointlightShader->LoadSuccess()									) {
+		|| !virtualPointlightShader->LoadSuccess()
+		|| !pointlightRaymarchShader->LoadSuccess()			) {
 		return;
 	}
 
@@ -1143,6 +1147,100 @@ void Renderer::DrawPointLights() {
 
 
 		glUniformMatrix4fv(glGetUniformLocation(pointlightShader->GetProgram(), "shadowMatrix"), 6, false, (float*)ShadowVPMatrices.data() );
+
+		UpdateShaderMatrices();
+
+		sphere->Draw();
+	}
+
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glCullFace(GL_BACK);
+	glDepthFunc(GL_LEQUAL);
+
+	glDepthMask(GL_TRUE);
+
+	glClearColor(0.2f, 0.2f, 0.2f, 1);
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+void Renderer::DrawPointLightsRaymarched()
+{
+	glBindFramebuffer(GL_FRAMEBUFFER, pointLightFBO);
+	BindShader(pointlightRaymarchShader);
+
+	glClearColor(0, 0, 0, 1);
+	glClear(GL_COLOR_BUFFER_BIT);
+	glBlendFunc(GL_ONE, GL_ONE);
+	glCullFace(GL_FRONT);
+	glDepthFunc(GL_ALWAYS);
+	glDepthMask(GL_FALSE);
+
+	glUniform1i(glGetUniformLocation(pointlightRaymarchShader->GetProgram(), "depthTex"), 0);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, bufferDepthTex);
+
+	glUniform1i(glGetUniformLocation(pointlightRaymarchShader->GetProgram(), "normTex"), 1);
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, bufferNormalTex);
+
+
+	glUniform3fv(glGetUniformLocation(pointlightRaymarchShader->GetProgram(), "cameraPos"), 1, (float*)&activeCamera->GetPosition());
+
+	glUniform2f(glGetUniformLocation(pointlightRaymarchShader->GetProgram(), "pixelSize"), 1.0f / width, 1.0f / height);
+
+	Matrix4 invViewProj = (projMatrix * viewMatrix).Inverse();
+	glUniformMatrix4fv(glGetUniformLocation(pointlightRaymarchShader->GetProgram(), "inverseProjView"), 1, false, invViewProj.values);
+
+	Matrix4 tempProjMatrix = Matrix4::Perspective(1.0f, 1000.0f, (float)width / (float)height, 45.0f);
+	glUniformMatrix4fv(glGetUniformLocation(illuminationShader->GetProgram(), "lensProjection"), 1, false, tempProjMatrix.values);
+
+	Matrix4 invProj = tempProjMatrix.Inverse();
+	glUniformMatrix4fv(glGetUniformLocation(illuminationShader->GetProgram(), "inverseProjection"), 1, false, invProj.values);
+
+	UpdateShaderMatrices();
+
+	for (int i = 0; i < LIGHT_NUM; ++i) {
+		Light& l = pointLights[i];
+		SetShaderLight(l);
+
+		// The many shadow maps of RSI
+
+		glUniform1i(glGetUniformLocation(pointlightRaymarchShader->GetProgram(), "shadowTex1"), 2);
+		glActiveTexture(GL_TEXTURE2);
+		glBindTexture(GL_TEXTURE_2D, shadowMaps[i][0]);
+
+		glUniform1i(glGetUniformLocation(pointlightRaymarchShader->GetProgram(), "shadowTex2"), 3);
+		glActiveTexture(GL_TEXTURE3);
+		glBindTexture(GL_TEXTURE_2D, shadowMaps[i][1]);
+
+		glUniform1i(glGetUniformLocation(pointlightRaymarchShader->GetProgram(), "shadowTex3"), 4);
+		glActiveTexture(GL_TEXTURE4);
+		glBindTexture(GL_TEXTURE_2D, shadowMaps[i][2]);
+
+		glUniform1i(glGetUniformLocation(pointlightRaymarchShader->GetProgram(), "shadowTex4"), 5);
+		glActiveTexture(GL_TEXTURE5);
+		glBindTexture(GL_TEXTURE_2D, shadowMaps[i][3]);
+
+		glUniform1i(glGetUniformLocation(pointlightRaymarchShader->GetProgram(), "shadowTex5"), 6);
+		glActiveTexture(GL_TEXTURE6);
+		glBindTexture(GL_TEXTURE_2D, shadowMaps[i][4]);
+
+		glUniform1i(glGetUniformLocation(pointlightRaymarchShader->GetProgram(), "shadowTex6"), 7);
+		glActiveTexture(GL_TEXTURE7);
+		glBindTexture(GL_TEXTURE_2D, shadowMaps[i][5]);
+
+		// IMPORTANT: Dont forget to enter the view and projection matrices
+
+		vector<Matrix4> ShadowVPMatrices;
+
+		for (int j = 0; j < 6; j++)
+		{
+			ShadowVPMatrices.push_back(shadowProj * shadowTransforms[i][j]);
+		}
+
+
+		glUniformMatrix4fv(glGetUniformLocation(pointlightRaymarchShader->GetProgram(), "shadowMatrix"), 6, false, (float*)ShadowVPMatrices.data());
 
 		UpdateShaderMatrices();
 
