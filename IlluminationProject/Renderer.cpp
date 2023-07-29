@@ -21,7 +21,9 @@ const int POST_SOBEL_BLUR_PASSES = 1;
 const int SSAO_KERNEL_COUNT = 16;
 
 // Deferred shadowmapping
-const unsigned int SHADOWSIZE = 2048;
+const unsigned int SHADOWSIZE = 512;
+//const unsigned int SHADOWSIZE = 1024;
+//const unsigned int SHADOWSIZE = 2048;
 
 // Virtual Point Lighting Parameters
 const Vector3 virtualLightStartPos = Vector3(0.0f, 0.0f, 0.0f);
@@ -980,7 +982,7 @@ void Renderer::RenderScene() {
 	FillBuffers();
 	DrawPointLights();
 	// Dont forget to toggle me as needed
-	DrawVirtualPointLights();
+	//DrawVirtualPointLights();
 
 	// SSAO
 	SSAOProcess();
