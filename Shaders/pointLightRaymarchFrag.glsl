@@ -24,7 +24,12 @@ uniform sampler2D shadowTex4;
 uniform sampler2D shadowTex5;
 uniform sampler2D shadowTex6;
 
-uniform mat4 shadowMatrix[6];
+uniform mat4 shadowMatrix1;
+uniform mat4 shadowMatrix2;
+uniform mat4 shadowMatrix3;
+uniform mat4 shadowMatrix4;
+uniform mat4 shadowMatrix5;
+uniform mat4 shadowMatrix6;
 
 uniform vec2 pixelSize; // reciprocal of resolution
 uniform vec3 cameraPos;
@@ -34,25 +39,31 @@ uniform float lightRadius;
 uniform vec3 lightPos;
 uniform vec4 lightColour;
 
-uniform vec3 lightViewSpacePos;
+//uniform vec3 lightViewSpacePos;
 
 // Transformation Matrices
 uniform mat4 inverseProjView;
 uniform mat4 inverseProjection;
-uniform mat4 lensProjection;
+uniform mat4 projMatrix;
 
-
+uniform mat4 viewMatrix;
 
 //// Output Information
 out vec4 diffuseOutput;
 out vec4 specularOutput;
+
+// Debug
+out vec4 debugOutput;
+out vec4 debugOutput2;
+out vec4 debugOutput3;
+out vec4 debugOutput4;
 ////
 
 
 //// Raymarch Parameters ////
 
-const float maxDistance = 50;
-const int steps = 25;
+const float maxDistance = 10;
+const int steps = 1500;
 const float thickness = 0.3;
 
 /////////////////////////////
@@ -131,7 +142,7 @@ void main(void) {
 	//vec4 pushVal = vec4( 0.0f, 0.0f, 0.0f, 0.0f );
 
 
-	float shadow = 1.0;
+	float shadow = 1.0f;
 
 
 	// Oh boy its carpal tunnel time
@@ -142,7 +153,7 @@ void main(void) {
 
 
 ////// RUN 1
-	vec4 shadowProj = shadowMatrix[0] * ( vec4(worldPos, 1) + pushVal );
+	vec4 shadowProj = shadowMatrix1 * ( vec4(worldPos, 1) + pushVal );
 
 	vec3 shadowNDC = shadowProj.xyz / shadowProj.w;
 	if( abs ( shadowNDC.x ) < 1.0f &&
@@ -167,7 +178,7 @@ void main(void) {
 //////
 
 ////// RUN 2
-	shadowProj = shadowMatrix[1] * ( vec4(worldPos, 1) + pushVal );
+	shadowProj = shadowMatrix2 * ( vec4(worldPos, 1) + pushVal );
 
 	shadowNDC = shadowProj.xyz / shadowProj.w;
 	if( abs ( shadowNDC.x ) < 1.0f &&
@@ -192,7 +203,7 @@ void main(void) {
 //////
 
 ////// RUN 3
-	shadowProj = shadowMatrix[2] * ( vec4(worldPos, 1) + pushVal );
+	shadowProj = shadowMatrix3 * ( vec4(worldPos, 1) + pushVal );
 
 	shadowNDC = shadowProj.xyz / shadowProj.w;
 	if( abs ( shadowNDC.x ) < 1.0f &&
@@ -217,7 +228,7 @@ void main(void) {
 //////
 
 ////// RUN 4
-	shadowProj = shadowMatrix[3] * ( vec4(worldPos, 1) + pushVal );
+	shadowProj = shadowMatrix4 * ( vec4(worldPos, 1) + pushVal );
 
 	shadowNDC = shadowProj.xyz / shadowProj.w;
 	if( abs ( shadowNDC.x ) < 1.0f &&
@@ -242,7 +253,7 @@ void main(void) {
 //////
 
 ////// RUN 5
-	shadowProj = shadowMatrix[4] * ( vec4(worldPos, 1) + pushVal );
+	shadowProj = shadowMatrix5 * ( vec4(worldPos, 1) + pushVal );
 
 	shadowNDC = shadowProj.xyz / shadowProj.w;
 	if( abs ( shadowNDC.x ) < 1.0f &&
@@ -267,7 +278,7 @@ void main(void) {
 //////
 
 ////// RUN 6
-	shadowProj = shadowMatrix[5] * ( vec4(worldPos, 1) + pushVal );
+	shadowProj = shadowMatrix6 * ( vec4(worldPos, 1) + pushVal );
 
 	shadowNDC = shadowProj.xyz / shadowProj.w;
 	if( abs ( shadowNDC.x ) < 1.0f &&
@@ -297,30 +308,40 @@ if (shadow != 0.0f)
 
 	// For use only on areas unoccluded by shadowmaps
 
+	// Total fragment dimensions
 	vec2 fragDivider  = textureSize(normTex, 0).xy;
 
-	// Ray start position (fragment position)
-	vec3 rayPosition = viewSpacePosFromDepth(texCoord.xy).xyz;
+	// Get View Space position of light
+	vec3 lightViewSpacePos = (viewMatrix * vec4(lightPos.xyz, 1.0f)).xyz;
 
-	// Ray direction vector
-	vec3 rayDirection = normalize(lightViewSpacePos-rayPosition);
+	// View Space Normal
+	vec3 viewSpaceNormal = mat3(viewMatrix) * normal;
 
-	// Ray end position
-	vec3 rayEndPosition = rayPosition + (rayDirection * maxDistance);
+	//// Ray start position (view space from texcoord)
+	//vec3 rayStartPosition = viewSpacePosFromDepth(texCoord.xy).xyz;
+
+	// Ray start position (view space from texcoord)	WITH NORMAL OFFSET
+	vec3 rayStartPosition = viewSpacePosFromDepth(texCoord.xy).xyz + viewSpaceNormal*0.05;
+
+	// Vector to the light source
+	vec3 lightDistanceVec3 = lightViewSpacePos-rayStartPosition;
+
+	// Ray end position, accounting for max distance
+	vec3 rayEndPosition = (lightDistanceVec3.length() < maxDistance) ? lightViewSpacePos : rayStartPosition + (maxDistance * normalize(lightDistanceVec3));
 
 	// Prevent end position surpassing Z boundary
 	if (rayEndPosition.z > 0)
 	{
-		float ratio = -rayPosition.z / (rayEndPosition.z - rayPosition.z + 1);
+		float ratio = -rayStartPosition.z / (rayEndPosition.z - rayStartPosition.z + 1);
 
-		rayEndPosition.xyz = rayPosition.xyz + ratio * (rayEndPosition.xyz - rayPosition.xyz);
+		rayEndPosition.xyz = rayStartPosition.xyz + ratio * (rayEndPosition.xyz - rayStartPosition.xyz);
 	}
 
 ////// Start and end positions to fragment coordinates
-	vec4 startFrag = vec4(rayPosition.xyz, 1);
+	vec4 startFrag = vec4(rayStartPosition.xyz, 1);
 
 	// Multiply by projection matrix to screen space
-	startFrag	= lensProjection * startFrag;
+	startFrag	= projMatrix * startFrag;
 
 	// Perspective divide
 	startFrag.xyz	/= startFrag.w;
@@ -329,14 +350,16 @@ if (shadow != 0.0f)
 	startFrag.xy	= startFrag.xy * 0.5 + 0.5;
 
 	// UV coordinates to fragment coordinates
-	startFrag.xy	*= texSize;
+	startFrag.xy	*= fragDivider;
+
+	debugOutput = vec4(startFrag.xy, 0.0f, 1.0f);
 
 
 	// End position
-	vec4 endFrag = vec4(rayPosition.xyz, 1);
+	vec4 endFrag = vec4(rayEndPosition.xyz, 1);
 
 	// Multiply by projection matrix to screen space
-	endFrag	= lensProjection * endFrag;
+	endFrag	= projMatrix * endFrag;
 
 	// Perspective divide
 	endFrag.xyz	/= endFrag.w;
@@ -345,7 +368,9 @@ if (shadow != 0.0f)
 	endFrag.xy	= endFrag.xy * 0.5 + 0.5;
 
 	// UV coordinates to fragment coordinates
-	endFrag.xy	*= texSize;
+	endFrag.xy	*= fragDivider;
+
+	debugOutput2 = vec4(endFrag.xy, 0.0f, 1.0f);
 //////
 
 	//Produce UV coordinate of fragment position
@@ -365,11 +390,17 @@ if (shadow != 0.0f)
 	// Divide deltas by greater delta, so largest axis movement is one
 	vec2  increment = vec2(deltaX, deltaY) / delta;
 
+	debugOutput3 = vec4(increment.x, increment.y, delta, 1.0f);
+
 	vec2 uv = vec2(0.0f);
 
 	vec4 currentPosition;
 
+	// Extra increment to stop close cuts
+	//frag	+= increment;
+
 	for (int i = 0; i < delta; i++)
+	//for (int i = 0; i < 1; i++)
 	{
 		// Frag is incremented by the per-step increment value
 		frag	+= increment;
@@ -389,7 +420,7 @@ if (shadow != 0.0f)
 		rayProgress = clamp(rayProgress, 0.0, 1.0);
 
 		// use search1 to interpolate (perspective-correctly) the viewspace position
-		float viewDistance = (rayPosition.z * rayEndPosition.z) / mix(rayEndPosition.z, rayPosition.z, rayProgress);
+		float viewDistance = (rayStartPosition.z * rayEndPosition.z) / mix(rayEndPosition.z, rayStartPosition.z, rayProgress);
 
 		// viewDistance is the ray position
 		// currentPosition is the viewspace position of the geometry
@@ -399,7 +430,7 @@ if (shadow != 0.0f)
 
 		// if an intersection is detected, fragment is occluded, break cycle
 		if (depth > 0 && depth < thickness) {
-			shadow = 0.0f;
+			//shadow = 0.0f;
 			break;
 		}
 	}

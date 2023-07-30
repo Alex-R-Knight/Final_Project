@@ -11,7 +11,12 @@ uniform sampler2D shadowTex4;
 uniform sampler2D shadowTex5;
 uniform sampler2D shadowTex6;
 
-uniform mat4 shadowMatrix[6];
+uniform mat4 shadowMatrix1;
+uniform mat4 shadowMatrix2;
+uniform mat4 shadowMatrix3;
+uniform mat4 shadowMatrix4;
+uniform mat4 shadowMatrix5;
+uniform mat4 shadowMatrix6;
 
 uniform vec2 pixelSize; // reciprocal of resolution
 uniform vec3 cameraPos;
@@ -87,7 +92,7 @@ void main(void) {
 
 
 ////// RUN 1
-	vec4 shadowProj = shadowMatrix[0] * ( vec4(worldPos, 1) + pushVal );
+	vec4 shadowProj = shadowMatrix1 * ( vec4(worldPos, 1) + pushVal );
 
 	vec3 shadowNDC = shadowProj.xyz / shadowProj.w;
 	if( abs ( shadowNDC.x ) < 1.0f &&
@@ -112,7 +117,7 @@ void main(void) {
 //////
 
 ////// RUN 2
-	shadowProj = shadowMatrix[1] * ( vec4(worldPos, 1) + pushVal );
+	shadowProj = shadowMatrix2 * ( vec4(worldPos, 1) + pushVal );
 
 	shadowNDC = shadowProj.xyz / shadowProj.w;
 	if( abs ( shadowNDC.x ) < 1.0f &&
@@ -137,7 +142,7 @@ void main(void) {
 //////
 
 ////// RUN 3
-	shadowProj = shadowMatrix[2] * ( vec4(worldPos, 1) + pushVal );
+	shadowProj = shadowMatrix3 * ( vec4(worldPos, 1) + pushVal );
 
 	shadowNDC = shadowProj.xyz / shadowProj.w;
 	if( abs ( shadowNDC.x ) < 1.0f &&
@@ -162,7 +167,7 @@ void main(void) {
 //////
 
 ////// RUN 4
-	shadowProj = shadowMatrix[3] * ( vec4(worldPos, 1) + pushVal );
+	shadowProj = shadowMatrix4 * ( vec4(worldPos, 1) + pushVal );
 
 	shadowNDC = shadowProj.xyz / shadowProj.w;
 	if( abs ( shadowNDC.x ) < 1.0f &&
@@ -187,7 +192,7 @@ void main(void) {
 //////
 
 ////// RUN 5
-	shadowProj = shadowMatrix[4] * ( vec4(worldPos, 1) + pushVal );
+	shadowProj = shadowMatrix5 * ( vec4(worldPos, 1) + pushVal );
 
 	shadowNDC = shadowProj.xyz / shadowProj.w;
 	if( abs ( shadowNDC.x ) < 1.0f &&
@@ -212,7 +217,7 @@ void main(void) {
 //////
 
 ////// RUN 6
-	shadowProj = shadowMatrix[5] * ( vec4(worldPos, 1) + pushVal );
+	shadowProj = shadowMatrix6 * ( vec4(worldPos, 1) + pushVal );
 
 	shadowNDC = shadowProj.xyz / shadowProj.w;
 	if( abs ( shadowNDC.x ) < 1.0f &&

@@ -22,6 +22,8 @@ const int SSAO_KERNEL_COUNT = 16;
 
 // Deferred shadowmapping
 const unsigned int SHADOWSIZE = 2048;
+//const unsigned int SHADOWSIZE = 1024;
+//const unsigned int SHADOWSIZE = 512;
 
 // Virtual Point Lighting Parameters
 const Vector3 virtualLightStartPos = Vector3(0.0f, 0.0f, 0.0f);
@@ -336,6 +338,72 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 
 	root->AddChild(testCube6);
 
+	SceneNode* testCube7 = new SceneNode();
+	testCube7->SetTransform(Matrix4::Translation(Vector3(-10.0f, 0.0f, 0.0f)));
+	testCube7->SetColour(Vector4(1.0f, 1.0f, 1.0f, 1.0f));
+	testCube7->SetModelScale(Vector3(4.0f, 4.0f, 4.0f));
+	testCube7->SetBoundingRadius(6.0f);
+	testCube7->SetMesh(Mesh::LoadFromMeshFile("Cube.msh"));
+	testCube7->SetTexture(grassTex);
+	testCube7->SetReflect(unreflectiveTex);
+
+	root->AddChild(testCube7);
+
+	SceneNode* testCube8 = new SceneNode();
+	testCube8->SetTransform(Matrix4::Translation(Vector3(-30.0f, 0.0f, 0.0f)));
+	testCube8->SetColour(Vector4(1.0f, 1.0f, 1.0f, 1.0f));
+	testCube8->SetModelScale(Vector3(4.0f, 4.0f, 4.0f));
+	testCube8->SetBoundingRadius(6.0f);
+	testCube8->SetMesh(Mesh::LoadFromMeshFile("Cube.msh"));
+	testCube8->SetTexture(grassTex);
+	testCube8->SetReflect(unreflectiveTex);
+
+	root->AddChild(testCube8);
+
+	SceneNode* testCube9 = new SceneNode();
+	testCube9->SetTransform(Matrix4::Translation(Vector3(-20.0f, 0.0f, -10.0f)));
+	testCube9->SetColour(Vector4(1.0f, 1.0f, 1.0f, 1.0f));
+	testCube9->SetModelScale(Vector3(4.0f, 4.0f, 4.0f));
+	testCube9->SetBoundingRadius(6.0f);
+	testCube9->SetMesh(Mesh::LoadFromMeshFile("Cube.msh"));
+	testCube9->SetTexture(grassTex);
+	testCube9->SetReflect(unreflectiveTex);
+
+	root->AddChild(testCube9);
+
+	SceneNode* testCube10 = new SceneNode();
+	testCube10->SetTransform(Matrix4::Translation(Vector3(-20.0f, 0.0f, -10.0f)));
+	testCube10->SetColour(Vector4(1.0f, 1.0f, 1.0f, 1.0f));
+	testCube10->SetModelScale(Vector3(4.0f, 4.0f, 4.0f));
+	testCube10->SetBoundingRadius(6.0f);
+	testCube10->SetMesh(Mesh::LoadFromMeshFile("Cube.msh"));
+	testCube10->SetTexture(grassTex);
+	testCube10->SetReflect(unreflectiveTex);
+
+	root->AddChild(testCube10);
+
+	SceneNode* testCube11 = new SceneNode();
+	testCube11->SetTransform(Matrix4::Translation(Vector3(-20.0f, 0.0f, 10.0f)));
+	testCube11->SetColour(Vector4(1.0f, 1.0f, 1.0f, 1.0f));
+	testCube11->SetModelScale(Vector3(4.0f, 4.0f, 4.0f));
+	testCube11->SetBoundingRadius(6.0f);
+	testCube11->SetMesh(Mesh::LoadFromMeshFile("Cube.msh"));
+	testCube11->SetTexture(grassTex);
+	testCube11->SetReflect(unreflectiveTex);
+
+	root->AddChild(testCube11);
+
+	SceneNode* testCube12 = new SceneNode();
+	testCube12->SetTransform(Matrix4::Translation(Vector3(40.0f, 0.0f, 10.0f)));
+	testCube12->SetColour(Vector4(1.0f, 1.0f, 1.0f, 1.0f));
+	testCube12->SetModelScale(Vector3(4.0f, 4.0f, 4.0f));
+	testCube12->SetBoundingRadius(6.0f);
+	testCube12->SetMesh(Mesh::LoadFromMeshFile("Cube.msh"));
+	testCube12->SetTexture(grassTex);
+	testCube12->SetReflect(unreflectiveTex);
+
+	root->AddChild(testCube12);
+
 	rotatingCube = new SceneNode();
 	rotatingCube->SetTransform(Matrix4::Translation(Vector3(15.0f, 0.0f, -15.0f)));
 	rotatingCube->SetColour(Vector4(1.0f, 1.0f, 1.0f, 1.0f));
@@ -361,12 +429,14 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 
 	glGenFramebuffers(1, &edgeFBO);
 
-	GLenum buffers[5] = {
+	GLenum buffers[7] = {
 		GL_COLOR_ATTACHMENT0 ,
 		GL_COLOR_ATTACHMENT1 ,
 		GL_COLOR_ATTACHMENT2 ,
 		GL_COLOR_ATTACHMENT3 ,
-		GL_COLOR_ATTACHMENT4
+		GL_COLOR_ATTACHMENT4 ,
+		GL_COLOR_ATTACHMENT5 ,
+		GL_COLOR_ATTACHMENT6
 	};
 
 	// Generate our scene depth texture ...
@@ -561,7 +631,12 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	glBindFramebuffer(GL_FRAMEBUFFER, pointLightFBO);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, lightDiffuseTex, 0);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, lightSpecularTex, 0);
-	glDrawBuffers(2, buffers);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, bufferViewSpacePosTex, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT3, GL_TEXTURE_2D, debugStorageTex1, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT4, GL_TEXTURE_2D, debugStorageTex2, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT5, GL_TEXTURE_2D, debugStorageTex3, 0);
+
+	glDrawBuffers(6, buffers);
 
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
 		return;
@@ -583,10 +658,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	//Preparing ilumination FBO
 	glBindFramebuffer(GL_FRAMEBUFFER, illuminationFBO);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, illuminationStorageTex, 0);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, debugStorageTex2, 0);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, debugStorageTex3, 0);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT3, GL_TEXTURE_2D, bufferViewSpacePosTex, 0);
-	glDrawBuffers(4, buffers);
+	glDrawBuffers(1, buffers);
 
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
 		return;
@@ -604,8 +676,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	//Preparing Edge FBO
 	glBindFramebuffer(GL_FRAMEBUFFER, edgeFBO);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, edgeStorageTex, 0);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, debugStorageTex1, 0);
-	glDrawBuffers(2, buffers);
+	glDrawBuffers(1, buffers);
 
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
 		return;
@@ -982,7 +1053,12 @@ void Renderer::RenderScene() {
 	FillShadowMaps();
 
 	FillBuffers();
-	DrawPointLights();
+
+	// Toggle between these as needed
+	//DrawPointLights();
+	DrawPointLightsRaymarched();
+
+
 	// Dont forget to toggle me as needed
 	//DrawVirtualPointLights();
 
@@ -1096,7 +1172,6 @@ void Renderer::DrawPointLights() {
 	glActiveTexture(GL_TEXTURE1);
 	glBindTexture(GL_TEXTURE_2D, bufferNormalTex);
 
-
 	glUniform3fv(glGetUniformLocation(pointlightShader->GetProgram(), "cameraPos"), 1, (float*)&activeCamera->GetPosition());
 
 	glUniform2f(glGetUniformLocation(pointlightShader->GetProgram(), "pixelSize"), 1.0f / width, 1.0f / height);
@@ -1137,16 +1212,39 @@ void Renderer::DrawPointLights() {
 		glBindTexture(GL_TEXTURE_2D, shadowMaps[i][5]);
 
 		// IMPORTANT: Dont forget to enter the view and projection matrices
+		// SEALED AWAY FOR ESOTERIC GPU ISSUES
+		//vector<Matrix4> ShadowVPMatrices;
 
-		vector<Matrix4> ShadowVPMatrices;
+		//for (int j = 0; j < 6; j++)
+		//{
+		//	ShadowVPMatrices.push_back( shadowProj * shadowTransforms[i][j]);
+		//}
 
-		for (int j = 0; j < 6; j++)
-		{
-			ShadowVPMatrices.push_back( shadowProj * shadowTransforms[i][j]);
-		}
+		//glUniformMatrix4fv(glGetUniformLocation(pointlightShader->GetProgram(), "shadowMatrix"), 6, false, (float*)ShadowVPMatrices.data() );
 
 
-		glUniformMatrix4fv(glGetUniformLocation(pointlightShader->GetProgram(), "shadowMatrix"), 6, false, (float*)ShadowVPMatrices.data() );
+		// Fixed matrix solution
+		// anomalous GPU behaviour prevents streamlined method
+
+		Matrix4 shadowMatrix1 = shadowProj * shadowTransforms[i][0];
+		glUniformMatrix4fv(glGetUniformLocation(pointlightShader->GetProgram(), "shadowMatrix1"), 1, false, shadowMatrix1.values);
+
+		Matrix4 shadowMatrix2 = shadowProj * shadowTransforms[i][1];
+		glUniformMatrix4fv(glGetUniformLocation(pointlightShader->GetProgram(), "shadowMatrix2"), 1, false, shadowMatrix2.values);
+
+		Matrix4 shadowMatrix3 = shadowProj * shadowTransforms[i][2];
+		glUniformMatrix4fv(glGetUniformLocation(pointlightShader->GetProgram(), "shadowMatrix3"), 1, false, shadowMatrix3.values);
+
+		Matrix4 shadowMatrix4 = shadowProj * shadowTransforms[i][3];
+		glUniformMatrix4fv(glGetUniformLocation(pointlightShader->GetProgram(), "shadowMatrix4"), 1, false, shadowMatrix4.values);
+
+		Matrix4 shadowMatrix5 = shadowProj * shadowTransforms[i][4];
+		glUniformMatrix4fv(glGetUniformLocation(pointlightShader->GetProgram(), "shadowMatrix5"), 1, false, shadowMatrix5.values);
+
+		Matrix4 shadowMatrix6 = shadowProj * shadowTransforms[i][5];
+		glUniformMatrix4fv(glGetUniformLocation(pointlightShader->GetProgram(), "shadowMatrix6"), 1, false, shadowMatrix6.values);
+
+
 
 		UpdateShaderMatrices();
 
@@ -1192,11 +1290,9 @@ void Renderer::DrawPointLightsRaymarched()
 	Matrix4 invViewProj = (projMatrix * viewMatrix).Inverse();
 	glUniformMatrix4fv(glGetUniformLocation(pointlightRaymarchShader->GetProgram(), "inverseProjView"), 1, false, invViewProj.values);
 
-	Matrix4 tempProjMatrix = Matrix4::Perspective(1.0f, 1000.0f, (float)width / (float)height, 45.0f);
-	glUniformMatrix4fv(glGetUniformLocation(illuminationShader->GetProgram(), "lensProjection"), 1, false, tempProjMatrix.values);
-
+	Matrix4 tempProjMatrix = projMatrix;
 	Matrix4 invProj = tempProjMatrix.Inverse();
-	glUniformMatrix4fv(glGetUniformLocation(illuminationShader->GetProgram(), "inverseProjection"), 1, false, invProj.values);
+	glUniformMatrix4fv(glGetUniformLocation(pointlightRaymarchShader->GetProgram(), "inverseProjection"), 1, false, invProj.values);
 
 	UpdateShaderMatrices();
 
@@ -1232,15 +1328,35 @@ void Renderer::DrawPointLightsRaymarched()
 
 		// IMPORTANT: Dont forget to enter the view and projection matrices
 
-		vector<Matrix4> ShadowVPMatrices;
+		//vector<Matrix4> ShadowVPMatrices;
+		//
+		//for (int j = 0; j < 6; j++)
+		//{
+		//	ShadowVPMatrices.push_back(shadowProj * shadowTransforms[i][j]);
+		//}
+		//
+		//glUniformMatrix4fv(glGetUniformLocation(pointlightRaymarchShader->GetProgram(), "shadowMatrix"), 6, false, (float*)ShadowVPMatrices.data());
 
-		for (int j = 0; j < 6; j++)
-		{
-			ShadowVPMatrices.push_back(shadowProj * shadowTransforms[i][j]);
-		}
+		// Fixed matrix solution
+		// anomalous GPU behaviour prevents streamlined method
 
+		Matrix4 shadowMatrix1 = shadowProj * shadowTransforms[i][0];
+		glUniformMatrix4fv(glGetUniformLocation(pointlightRaymarchShader->GetProgram(), "shadowMatrix1"), 1, false, shadowMatrix1.values);
 
-		glUniformMatrix4fv(glGetUniformLocation(pointlightRaymarchShader->GetProgram(), "shadowMatrix"), 6, false, (float*)ShadowVPMatrices.data());
+		Matrix4 shadowMatrix2 = shadowProj * shadowTransforms[i][1];
+		glUniformMatrix4fv(glGetUniformLocation(pointlightRaymarchShader->GetProgram(), "shadowMatrix2"), 1, false, shadowMatrix2.values);
+
+		Matrix4 shadowMatrix3 = shadowProj * shadowTransforms[i][2];
+		glUniformMatrix4fv(glGetUniformLocation(pointlightRaymarchShader->GetProgram(), "shadowMatrix3"), 1, false, shadowMatrix3.values);
+
+		Matrix4 shadowMatrix4 = shadowProj * shadowTransforms[i][3];
+		glUniformMatrix4fv(glGetUniformLocation(pointlightRaymarchShader->GetProgram(), "shadowMatrix4"), 1, false, shadowMatrix4.values);
+
+		Matrix4 shadowMatrix5 = shadowProj * shadowTransforms[i][4];
+		glUniformMatrix4fv(glGetUniformLocation(pointlightRaymarchShader->GetProgram(), "shadowMatrix5"), 1, false, shadowMatrix5.values);
+
+		Matrix4 shadowMatrix6 = shadowProj * shadowTransforms[i][5];
+		glUniformMatrix4fv(glGetUniformLocation(pointlightRaymarchShader->GetProgram(), "shadowMatrix6"), 1, false, shadowMatrix6.values);
 
 		UpdateShaderMatrices();
 
