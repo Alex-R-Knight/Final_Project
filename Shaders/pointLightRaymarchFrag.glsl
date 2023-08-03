@@ -12,6 +12,7 @@
 ////
 
 
+
 // Sampler Textures
 uniform sampler2D depthTex;
 uniform sampler2D normTex;
@@ -62,8 +63,8 @@ out vec4 debugOutput4;
 
 //// Raymarch Parameters ////
 
-const float maxDistance = 10;
-const int steps = 1500;
+const float maxDistance = 5;
+const int steps = 1000;
 const float thickness = 0.3;
 
 /////////////////////////////
@@ -405,6 +406,13 @@ if (shadow != 0.0f)
 		// Frag is incremented by the per-step increment value
 		frag	+= increment;
 
+		// Test if within boundaries
+		if (frag.x > fragDivider.x || frag.x < 0 || frag.y > fragDivider.y || frag.y < 0)
+		{
+			// passed beyond screen space
+			break;
+		}
+
 		// Divide fragment coordinates by texture size for UV coordinates
 		uv.xy	= frag / fragDivider;
 
@@ -430,7 +438,7 @@ if (shadow != 0.0f)
 
 		// if an intersection is detected, fragment is occluded, break cycle
 		if (depth > 0 && depth < thickness) {
-			//shadow = 0.0f;
+			shadow = 0.0f;
 			break;
 		}
 	}
