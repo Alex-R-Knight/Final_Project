@@ -12,8 +12,6 @@ vec2 texCoord;
 } IN;
 
 out vec4 fragColor;
-out vec4 fragColor2;
-
 
 void main(void) {
 
@@ -59,8 +57,6 @@ void main(void) {
 
 	vec3 yGradient = (( normalUL + 2*normalUM + normalUR ) - ( normalLL + 2*normalLM + normalLR ));
 
-	float combinedGradient = dot(normalize(xGradient), normalize(yGradient));
-
 	float normalThreshold = 1.0;
 
 	float xGradientLength = length(xGradient);
@@ -69,10 +65,6 @@ void main(void) {
 	// Lighting check
 	float light = length(texture2D(lightColourTex, IN.texCoord.xy).xyz);
 
-	vec4 lightvec4 = texture2D(lightColourTex, IN.texCoord.xy);
-
 	// Final result
 	fragColor = (magnitude > depthThreshold || xGradientLength > normalThreshold || yGradientLength > normalThreshold) ? vec4(1.0, light, 0.0f, 1.0f) : vec4(0.0);
-
-	fragColor2 = lightvec4;
 }

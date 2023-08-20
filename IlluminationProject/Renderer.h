@@ -246,4 +246,14 @@ protected:
 	vector<float>	virtualPointLightsRadius; // Radius of lights
 
 	float spinnyTime;
+
+	// Timing
+
+	GLuint queryObject;
+	GLuint64 endTime;
+	bool timingInProgress = false;
+
+	void startTiming();
+	void endTiming();
+
 };

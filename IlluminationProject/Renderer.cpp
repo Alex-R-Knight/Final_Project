@@ -37,6 +37,10 @@ const int virtualLightRowsVertical = 1;
 const int virtualLightSpreadVertical = 0;
 
 Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
+
+	// For timer usage
+	glGenQueries(1, &queryObject);
+
 	spinnyTime = 0.0f;
 	sphere = Mesh::LoadFromMeshFile("Sphere.msh");
 	//cube = Mesh::LoadFromMeshFile("OffsetCubeY.msh");
@@ -598,8 +602,9 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	//First camera alpha FBO
 	glBindFramebuffer(GL_FRAMEBUFFER, alphaFBO);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, alphaColourTex, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, bufferViewSpacePosTex, 0);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, alphaDepthTex, 0);
-	glDrawBuffers(1, buffers);
+	glDrawBuffers(2, buffers);
 
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
 		return;
@@ -631,12 +636,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	glBindFramebuffer(GL_FRAMEBUFFER, pointLightFBO);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, lightDiffuseTex, 0);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, lightSpecularTex, 0);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, bufferViewSpacePosTex, 0);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT3, GL_TEXTURE_2D, debugStorageTex1, 0);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT4, GL_TEXTURE_2D, debugStorageTex2, 0);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT5, GL_TEXTURE_2D, debugStorageTex3, 0);
-
-	glDrawBuffers(6, buffers);
+	glDrawBuffers(2, buffers);
 
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
 		return;
@@ -1050,36 +1050,73 @@ void Renderer::RenderScene() {
 	BuildNodeLists(root);
 	SortNodeLists();
 
+	std::cout << "Shadowmapping" << std::endl;
+	startTiming();
 	FillShadowMaps();
+	endTiming();
 
+	std::cout << "Fill buffers" << std::endl;
+	startTiming();
 	FillBuffers();
+	endTiming();
 
+	std::cout << "Point Lights" << std::endl;
+	startTiming();
 	// Toggle between these as needed
 	//DrawPointLights();
 	DrawPointLightsRaymarched();
+	endTiming();
 
 
 	// Dont forget to toggle me as needed
 	//DrawVirtualPointLights();
 
+	std::cout << "SSAO Process" << std::endl;
+	startTiming();
 	// SSAO
 	SSAOProcess();
+	endTiming();
+
+	std::cout << "SSAO Blur" << std::endl;
+	startTiming();
 	SSAOBlurring();
+	endTiming();
 
 	// Raymarch lighting
+	std::cout << "Global Illumination" << std::endl;
+	startTiming();
 	RaymarchLighting();
+	endTiming();
+
+	std::cout << "Global Illumination Blurring" << std::endl;
+	startTiming();
 	LightingBlurring();
+	endTiming();
 
 	CombineBuffers();
 
 	// Raymarch reflections
+	std::cout << "Reflection Process" << std::endl;
+	startTiming();
 	RaymarchReflection();
+	endTiming();
+
+	std::cout << "Reflection Blurring" << std::endl;
+	startTiming();
 	ReflectionBlurring();
+	endTiming();
 
 	DrawAlphaMeshes();
 
+	std::cout << "Edge Detection" << std::endl;
+	startTiming();
 	SobelProcess();
+	endTiming();
+
+	std::cout << "Edge Detection Blur" << std::endl;
+	startTiming();
 	SobelBlurring();
+	endTiming();
 
 	ClearNodeLists();
 }
@@ -1293,8 +1330,6 @@ void Renderer::DrawPointLightsRaymarched()
 	Matrix4 tempProjMatrix = projMatrix;
 	Matrix4 invProj = tempProjMatrix.Inverse();
 	glUniformMatrix4fv(glGetUniformLocation(pointlightRaymarchShader->GetProgram(), "inverseProjection"), 1, false, invProj.values);
-
-	UpdateShaderMatrices();
 
 	for (int i = 0; i < LIGHT_NUM; ++i) {
 		Light& l = pointLights[i];
@@ -2037,4 +2072,26 @@ void Renderer::SobelBlurring()
 		quad->Draw();
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glEnable(GL_DEPTH_TEST);
+}
+
+void Renderer::startTiming()
+{
+	if (!timingInProgress) {
+		glBeginQuery(GL_TIME_ELAPSED, queryObject);
+		timingInProgress = true;
+	}
+}
+
+void Renderer::endTiming()
+{
+	if (timingInProgress) {
+		glEndQuery(GL_TIME_ELAPSED);
+		timingInProgress = false;
+
+		// Get timer value
+		glGetQueryObjectui64v(queryObject, GL_QUERY_RESULT, &endTime);
+
+		// output time
+		std::cout << "Elapsed Time: " << endTime << " ns" << std::endl;
+	}
 }

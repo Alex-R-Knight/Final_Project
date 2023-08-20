@@ -53,18 +53,11 @@ uniform mat4 viewMatrix;
 out vec4 diffuseOutput;
 out vec4 specularOutput;
 
-// Debug
-out vec4 debugOutput;
-out vec4 debugOutput2;
-out vec4 debugOutput3;
-out vec4 debugOutput4;
-////
-
 
 //// Raymarch Parameters ////
 
-const float maxDistance = 5;
-const int steps = 1000;
+const float maxDistance = 2.5;
+const int steps = 100;
 const float thickness = 0.3;
 
 /////////////////////////////
@@ -353,7 +346,7 @@ if (shadow != 0.0f)
 	// UV coordinates to fragment coordinates
 	startFrag.xy	*= fragDivider;
 
-	debugOutput = vec4(startFrag.xy, 0.0f, 1.0f);
+	//debugOutput = vec4(startFrag.xy, 0.0f, 1.0f);
 
 
 	// End position
@@ -371,7 +364,7 @@ if (shadow != 0.0f)
 	// UV coordinates to fragment coordinates
 	endFrag.xy	*= fragDivider;
 
-	debugOutput2 = vec4(endFrag.xy, 0.0f, 1.0f);
+	//debugOutput2 = vec4(endFrag.xy, 0.0f, 1.0f);
 //////
 
 	//Produce UV coordinate of fragment position
@@ -391,7 +384,7 @@ if (shadow != 0.0f)
 	// Divide deltas by greater delta, so largest axis movement is one
 	vec2  increment = vec2(deltaX, deltaY) / delta;
 
-	debugOutput3 = vec4(increment.x, increment.y, delta, 1.0f);
+	//debugOutput3 = vec4(increment.x, increment.y, delta, 1.0f);
 
 	vec2 uv = vec2(0.0f);
 
@@ -406,15 +399,14 @@ if (shadow != 0.0f)
 		// Frag is incremented by the per-step increment value
 		frag	+= increment;
 
-		// Test if within boundaries
-		if (frag.x > fragDivider.x || frag.x < 0 || frag.y > fragDivider.y || frag.y < 0)
-		{
-			// passed beyond screen space
-			break;
-		}
-
 		// Divide fragment coordinates by texture size for UV coordinates
 		uv.xy	= frag / fragDivider;
+
+		// Test if within boundaries
+		if (uv.x > 1.0f || uv.x < 0.0f || uv.y > 1.0f || uv.y < 0.0f)
+		{
+			break;
+		}
 
 		// Reads the position info of the calculated UV coordinates
 		currentPosition	= viewSpacePosFromDepth(uv.xy);

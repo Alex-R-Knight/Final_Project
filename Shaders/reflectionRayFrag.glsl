@@ -34,8 +34,8 @@ uniform sampler2D baseTexture;
 //// Raymarch Parameters ////
 
 float maxDistance = 50;
-float resolution = 1.0;
-int steps = 25;
+float resolution = 0.5;
+int steps = 15;
 const float thickness = 0.4;
 
 /////////////////////////////
@@ -204,6 +204,11 @@ void main(void) {
 
 		// Divide fragment coordinates by texture size for UV coordinates
 		uv.xy		= frag / texSize;
+
+		if (uv.x > 1.0f || uv.x < 0.0f || uv.y > 1.0f || uv.y < 0.0f)
+		{
+			break;
+		}
 
 		// Reads the position info of the calculated UV coordinates
 		positionTo	= viewSpacePosFromDepth(uv.xy);

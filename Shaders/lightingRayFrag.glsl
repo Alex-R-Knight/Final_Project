@@ -43,9 +43,9 @@ uniform sampler2D noiseTex;
 
 //// Raymarch Parameters ////
 
-float maxDistance = 50;
-float resolution = 1.0;
-int steps = 25;
+float maxDistance = 20;
+float resolution = 0.4;
+int steps = 20;
 const float thickness = 0.3;
 
 /////////////////////////////
@@ -72,12 +72,6 @@ vec4 viewSpacePosFromDepth(vec2 inCoord) {
 
 
 void main(void) {
-
-//float maxDistance = 50;
-//float resolution = 1;
-//int steps = 25;
-//const float thickness = 0.1f;
-
 
 ////// UV vec4 to be used as shader output //////
 	vec4 uv = vec4(0.0f, 0.0f, 0.0f, 0.0f);
@@ -249,6 +243,11 @@ void main(void) {
 
 		// Divide fragment coordinates by texture size for UV coordinates
 		uv.xy		= frag / texSize;
+
+		if (uv.x > 1.0f || uv.x < 0.0f || uv.y > 1.0f || uv.y < 0.0f)
+		{
+			break;
+		}
 
 		// Reads the position info of the calculated UV coordinates
 		positionTo	= viewSpacePosFromDepth(uv.xy);
