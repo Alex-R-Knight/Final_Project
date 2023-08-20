@@ -52,10 +52,32 @@ protected:
 	void DrawPointLights(); // Lighting Render Pass
 	void CombineBuffers(); // Combination Render Pass
 
+	void DrawVirtualPointLights(); // Extra Lighting Render Pass
+
+	void DrawPointLightsRaymarched(); // Lighting Render Pass with Screen Space Shadows
+
+
 	void DrawAlphaMeshes(); //Draw transparent meshes after
 
+	// Screenspace reflections
 	void RaymarchReflection();
 	void ReflectionBlurring();
+
+	//Deferred shadows
+	void FillShadowMaps();
+
+	// Screenspace illumination
+	void RaymarchLighting();
+	void LightingBlurring();
+	float IGN(int x, int y);
+
+	// Screen Space Ambient Occlusion
+	void SSAOProcess();
+	void SSAOBlurring();
+
+	// Edge blurring
+	void SobelProcess();
+	void SobelBlurring();
 
 
 	void BuildNodeLists(SceneNode* from);
@@ -70,6 +92,8 @@ protected:
 	void DrawAlphaNode(SceneNode* n);
 
 	SceneNode* root;
+
+	SceneNode* rotatingCube;
 
 	void DrawSkybox();
 	Shader* skyboxShader;
@@ -89,8 +113,25 @@ protected:
 	Shader* blurShader; // for post-processing blur
 	Shader* sobelShader; // for post-processing sobel
 
-	//// Raymarch Shader ////
-	Shader* marchShader;
+	//// Raymarch Shaders ////
+	Shader* reflectionShader;
+
+	Shader* illuminationShader;
+
+	// Deferred Shadows
+	Shader* shadowShader;
+
+	// SSAO Shader
+	Shader* SSAOShader;
+
+	// Edge Shader
+	Shader* SobelDepthShader;
+
+	// Virtual Point Light
+	Shader* virtualPointlightShader;
+
+	// Point Lights with Screen Space Shadows
+	Shader* pointlightRaymarchShader; // Shader to calculate lighting
 
 	GLuint processFBO; //The FBO for post processing
 	GLuint processColourTex; //The texture for post processing
@@ -113,16 +154,28 @@ protected:
 	GLuint bufferDepthTex; // Depth goes here
 	//...
 	// Global Illumination Part
-	GLuint bufferStochasticNormalTex; // Stochastic normals go here
+	GLuint illuminationNoiseTex;
+
 	// Reflection part
 	GLuint reflectionBufferTex;
 
+	// SSAO Part
+	GLuint SSAOFBO;
+	GLuint SSAOTex;
+	// noise storage tex
+	GLuint SSAONoiseTex;
 
-	// Global illumination UV buffer
-	GLuint UVFBO;			// FBO for UV storage
-	GLuint bufferUVTex;			// UV goes here
+
+	// Reflection buffer
+	GLuint reflectionFBO;			// FBO for reflection storage
+	GLuint reflectionStorageTex;	// Reflection tex goes here
+
+	// Illumination buffer
+	GLuint illuminationFBO;			// FBO for illumination storage
+	GLuint illuminationStorageTex;	// Illumination tex goes here
+
 	// Debug values in these
-	GLuint bufferViewSpacePosTex; // Viewspace position goes here
+	GLuint bufferViewSpacePosTex;	// Viewspace position goes here
 	GLuint debugStorageTex1;
 	GLuint debugStorageTex2;
 	GLuint debugStorageTex3;
@@ -171,4 +224,36 @@ protected:
 	vector <SceneNode*> transparentNodeList;
 	vector <SceneNode*> nodeList;
 	vector <SceneNode*> animNodeList;
+
+
+	// Deferred shadowmapping
+	vector<vector<GLuint>> shadowFBO;
+	vector<vector<GLuint>> shadowMaps;
+	Matrix4 shadowProj;
+	vector<vector<Matrix4>> shadowTransforms;
+
+	// SSAO Storage
+	vector<Vector3> SSAOKernels;
+	vector<Vector3> SSAONoise;
+
+	// Edge blurring Storage
+	GLuint edgeFBO;
+	GLuint edgeStorageTex;
+
+	// Virtual Point Lighting
+	vector<Vector3> virtualPointLights; // Array of VPL positions
+	vector<Vector3> virtualPointLightsColour; // Array of VPL colour values
+	vector<float>	virtualPointLightsRadius; // Radius of lights
+
+	float spinnyTime;
+
+	// Timing
+
+	GLuint queryObject;
+	GLuint64 endTime;
+	bool timingInProgress = false;
+
+	void startTiming();
+	void endTiming();
+
 };
