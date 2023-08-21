@@ -167,11 +167,11 @@ void main(void) {
 	vec2  increment = vec2(deltaX, deltaY) / max(delta, 0.001f);
 
 ////// Create search values
-	// Search0 stores the last known position before an intersection. It is then used in the 2nd pass.
-	float search0 = 0;
+	// lastMissPosition stores the last known position before an intersection. It is then used in the 2nd pass.
+	float lastMissPosition = 0;
 
-	// Search1 moves from 0 to 1, representing distance between start and end fragment
-	float search1 = 0;
+	// rayProgress moves from 0 to 1, representing distance between start and end fragment
+	float rayProgress = 0;
 //////
 
 ////// Create hit values
@@ -213,22 +213,16 @@ void main(void) {
 		// Reads the position info of the calculated UV coordinates
 		positionTo	= viewSpacePosFromDepth(uv.xy);
 
-
-
 		//Determines distance along the line, using the X or Y based on the useX determined above. Then clamp to 0-1 range.
-		search1 = mix(
+		rayProgress = mix(
 			(frag.y - startFrag.y) / deltaY,
 			(frag.x - startFrag.x) / deltaX,
 			useX
         );
-		search1 = clamp(search1, 0.0, 1.0);
+		rayProgress = clamp(rayProgress, 0.0, 1.0);
 
-		//search1 = abs(frag.y - startFrag.y) / abs(deltaY);
-		//search1 = clamp(search1, 0.0, 1.0);
-
-
-		// use search1 to interpolate (perspective-correctly) the viewspace position
-		viewDistance = (startView.z * endView.z) / mix(endView.z, startView.z, search1);
+		// use rayProgress to interpolate (perspective-correctly) the viewspace position
+		viewDistance = (startView.z * endView.z) / mix(endView.z, startView.z, rayProgress);
 
 
 		// viewDistance is the ray position
@@ -244,15 +238,15 @@ void main(void) {
 			hit0 = 1;
 			break;
 		}
-		// otherwise, search0 is set to search1, and the for loop repeats. This is to mark the current last known miss in the first pass.
+		// otherwise, lastMissPosition is set to rayProgress, and the for loop repeats. This is to mark the current last known miss in the first pass.
 		else {
-		  search0 = search1;
+		  lastMissPosition = rayProgress;
 		}
 	}
 //////
 
-	// search1 is set to halfway between the last miss and the last hit positions
-	search1 = search0 + ((search1 - search0) / 2.0);
+	// rayProgress is set to halfway between the last miss and the last hit positions
+	rayProgress = lastMissPosition + ((rayProgress - lastMissPosition) / 2.0);
 
 	// If no intersection was found in the first pass, then changing steps to zero will prevent a second pass
 	steps *= hit0;
@@ -260,8 +254,8 @@ void main(void) {
 ////// Second pass
 	for (float i = 0; i < steps; ++i) {
 	
-		// frag is set to the current search1 record of distance along the ray
-		frag	= mix(startFrag.xy, endFrag.xy, search1);
+		// frag is set to the current rayProgress record of distance along the ray
+		frag	= mix(startFrag.xy, endFrag.xy, rayProgress);
 	
 		// the UV coordinates are generated as before from fragment coordinates and texture size
 		uv.xy	= frag / texSize;
@@ -269,22 +263,22 @@ void main(void) {
 		// The position info of these UV coordinates are sampled
 		positionTo = viewSpacePosFromDepth(uv.xy);
 	
-		// use search1 to interpolate (perspective-correctly) the viewspace position
-		viewDistance	= (startView.z * endView.z) / mix(endView.z, startView.z, search1);
+		// use rayProgress to interpolate (perspective-correctly) the viewspace position
+		viewDistance	= (startView.z * endView.z) / mix(endView.z, startView.z, rayProgress);
 	
 		// Calculate depth by comparing the ray and the fragment depths
 		depth        = positionTo.z- viewDistance;
 	
-		// if an intersection is found, hit1 is set to 1, search1 is set to halfway between last known miss (search0) and the current hit
+		// if an intersection is found, hit1 is set to 1, rayProgress is set to halfway between last known miss (lastMissPosition) and the current hit
 		if (depth > 0 && depth < thickness) {
 			hit1 = 1;
-			search1 = search0 + ((search1 - search0) / 2);
+			rayProgress = lastMissPosition + ((rayProgress - lastMissPosition) / 2);
 		}
-		// If no intersection is found, search0 is set to the current miss position, search1 is set to halfway between the the last known hit, and the current miss
+		// If no intersection is found, lastMissPosition is set to the current miss position, rayProgress is set to halfway between the the last known hit, and the current miss
 		else {
-			float temp = search1;
-			search1 = search1 + ((search1 - search0) / 2);
-			search0 = temp;
+			float temp = rayProgress;
+			rayProgress = rayProgress + ((rayProgress - lastMissPosition) / 2);
+			lastMissPosition = temp;
 		}
 	}
 //////

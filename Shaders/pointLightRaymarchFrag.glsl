@@ -2,14 +2,6 @@
 
 // Screen space shadow version
 
-//// The Plan:
-
-// For each pixel that passes shadowmap testing,
-// Raymarch from viewspace position of fragment towards light source
-// In event of collision, pixel is occluded
-// Also unoccluded pixels can receive a little occlusion based on normal compared to ray direction
-
-////
 
 
 
@@ -138,8 +130,6 @@ void main(void) {
 
 	float shadow = 1.0f;
 
-
-	// Oh boy its carpal tunnel time
 	float kernalVal = 1.0f / 9.0f;
 
 	vec2 texSize  = textureSize(shadowTex1, 0).xy;
@@ -419,7 +409,7 @@ if (shadow != 0.0f)
 		);
 		rayProgress = clamp(rayProgress, 0.0, 1.0);
 
-		// use search1 to interpolate (perspective-correctly) the viewspace position
+		// use rayProgress to interpolate (perspective-correctly) the viewspace position
 		float viewDistance = (rayStartPosition.z * rayEndPosition.z) / mix(rayEndPosition.z, rayStartPosition.z, rayProgress);
 
 		// viewDistance is the ray position

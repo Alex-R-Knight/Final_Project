@@ -82,7 +82,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Shaders", "Shaders", "{E566
 		Shaders\processfrag.glsl = Shaders\processfrag.glsl
 		Shaders\processfrag_sobel_depth.glsl = Shaders\processfrag_sobel_depth.glsl
 		Shaders\processfrag_sobel_edge.glsl = Shaders\processfrag_sobel_edge.glsl
-		Shaders\raymarchfrag.glsl = Shaders\raymarchfrag.glsl
 		Shaders\reflectFragment.glsl = Shaders\reflectFragment.glsl
 		Shaders\reflectionRayFrag.glsl = Shaders\reflectionRayFrag.glsl
 		Shaders\reflectVertex.glsl = Shaders\reflectVertex.glsl
