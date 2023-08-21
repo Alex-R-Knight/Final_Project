@@ -125,8 +125,6 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 
 	threePos = heightmapSize * Vector3(0.5f, 2.0f, 0.25f);
 
-	camera_2 = new Camera(-20.0f, 135.0f, heightmapSize * Vector3(0.75f, 3.0f, 0.25f));
-
 	activeCamera = camera;
 
 	pointLights = new Light[LIGHT_NUM];
@@ -420,7 +418,6 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	root->AddChild(rotatingCube);
 
 	glGenFramebuffers(1, &alphaFBO);
-	glGenFramebuffers(1, &alphaFBO_2);
 	glGenFramebuffers(1, &bufferFBO);
 	glGenFramebuffers(1, &pointLightFBO);
 	glGenFramebuffers(1, &processFBO);
@@ -447,8 +444,6 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	GenerateScreenTexture(processColourTex);
 	GenerateScreenTexture(alphaColourTex);
 	GenerateScreenTexture(alphaDepthTex, true);
-	GenerateScreenTexture(alphaColourTex_2);
-	GenerateScreenTexture(alphaDepthTex_2, true);
 	GenerateScreenTexture(bufferDepthTex, true);
 	GenerateScreenTexture(bufferColourTex);
 	GenerateScreenTexture(bufferNormalTex);
@@ -463,11 +458,6 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	GenerateScreenTexture(SSAOTex);
 
 	GenerateScreenTexture(edgeStorageTex);
-
-	GeneratePositionTexture(bufferViewSpacePosTex);
-	GeneratePositionTexture(debugStorageTex1);
-	GeneratePositionTexture(debugStorageTex2);
-	GeneratePositionTexture(debugStorageTex3);
 
 ////// Deferred shadowmapping
 
@@ -602,18 +592,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	//First camera alpha FBO
 	glBindFramebuffer(GL_FRAMEBUFFER, alphaFBO);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, alphaColourTex, 0);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, bufferViewSpacePosTex, 0);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, alphaDepthTex, 0);
-	glDrawBuffers(2, buffers);
-
-	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-		return;
-	}
-
-	//Second camera alpha FBO
-	glBindFramebuffer(GL_FRAMEBUFFER, alphaFBO_2);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, alphaColourTex_2, 0);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, alphaDepthTex_2, 0);
 	glDrawBuffers(1, buffers);
 
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
@@ -725,9 +704,7 @@ Renderer::~Renderer(void) {
 	glDeleteTextures(1, &currentAlphaColourTex);
 	glDeleteTextures(1, &currentAlphaDepthTex);
 	glDeleteTextures(1, &alphaColourTex);
-	glDeleteTextures(1, &alphaColourTex_2);
 	glDeleteTextures(1, &alphaDepthTex);
-	glDeleteTextures(1, &alphaDepthTex_2);
 	glDeleteTextures(1, &bufferColourTex);
 	glDeleteTextures(1, &bufferNormalTex);
 	glDeleteTextures(1, &reflectionBufferTex);
@@ -742,16 +719,9 @@ Renderer::~Renderer(void) {
 	glDeleteTextures(1, &SSAONoiseTex);
 	glDeleteTextures(1, &illuminationNoiseTex);
 
-	// Debug textures here
-	glDeleteTextures(1, &bufferViewSpacePosTex);
-	glDeleteTextures(1, &debugStorageTex1);
-	glDeleteTextures(1, &debugStorageTex2);
-	glDeleteTextures(1, &debugStorageTex3);
-
 	glDeleteFramebuffers(1, &processFBO);
 	glDeleteFramebuffers(1, &currentAlphaFBO);
 	glDeleteFramebuffers(1, &alphaFBO);
-	glDeleteFramebuffers(1, &alphaFBO_2);
 	glDeleteFramebuffers(1, &bufferFBO);
 	glDeleteFramebuffers(1, &pointLightFBO);
 
@@ -857,11 +827,6 @@ void Renderer::railMovement(float dt) {
 		camera->SetYaw(0 + ratio * -30);
 		if (timePassed >= limit) { breakRail(); }
 	}
-}
-
-void Renderer::UpdateScene_2() {
-	viewMatrix = activeCamera->BuildViewMatrix();
-	frameFrustum.FromMatrix(projMatrix * viewMatrix);
 }
 
 void Renderer::BuildNodeLists(SceneNode* from) {
@@ -1995,12 +1960,6 @@ void Renderer::firstCameraBuffer() {
 	currentAlphaFBO = alphaFBO;
 	currentAlphaColourTex = alphaColourTex;
 	currentAlphaDepthTex = alphaDepthTex;
-}
-
-void Renderer::secondCameraBuffer() {
-	currentAlphaFBO = alphaFBO_2;
-	currentAlphaColourTex = alphaColourTex_2;
-	currentAlphaDepthTex = alphaDepthTex_2;
 }
 
 float Renderer::IGN(int x, int y)

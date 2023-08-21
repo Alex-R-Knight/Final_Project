@@ -16,14 +16,9 @@ public:
 
 	void RenderScene() override;
 	void UpdateScene(float dt) override;
-	void UpdateScene_2();
 	void firstCamera() { activeCamera = camera; };
-	void secondCamera() { activeCamera = camera_2; };
-	void setOneCamera() { twoCameras = false; };
-	void setTwoCameras() { twoCameras = true; };
 
 	void firstCameraBuffer();
-	void secondCameraBuffer();
 
 	void useBlur();
 	void useSobel();
@@ -45,8 +40,6 @@ protected:
 	Vector3 onePos;
 	Vector3 twoPos;
 	Vector3 threePos;
-
-	bool twoCameras;
 
 	void FillBuffers(); //G-Buffer Fill Render Pass
 	void DrawPointLights(); // Lighting Render Pass
@@ -144,10 +137,6 @@ protected:
 	GLuint alphaColourTex; // Albedo goes here
 	GLuint alphaDepthTex; // Depth goes here
 
-	GLuint alphaFBO_2; //FBO for our transparency pass
-	GLuint alphaColourTex_2; // Albedo goes here
-	GLuint alphaDepthTex_2; // Depth goes here
-
 	GLuint bufferFBO; //FBO for our G-Buffer pass
 	GLuint bufferColourTex; // Albedo goes here
 	GLuint bufferNormalTex; // Normals go here
@@ -173,12 +162,6 @@ protected:
 	// Illumination buffer
 	GLuint illuminationFBO;			// FBO for illumination storage
 	GLuint illuminationStorageTex;	// Illumination tex goes here
-
-	// Debug values in these
-	GLuint bufferViewSpacePosTex;	// Viewspace position goes here
-	GLuint debugStorageTex1;
-	GLuint debugStorageTex2;
-	GLuint debugStorageTex3;
 
 	GLuint pointLightFBO; //FBO for our lighting pass
 	GLuint lightDiffuseTex; // Store diffuse lighting

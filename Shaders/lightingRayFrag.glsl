@@ -12,9 +12,6 @@ vec2 texCoord;
 //out vec4 fragColor;
 
 out vec4 uvOutput;
-out vec4 debugOutput;
-out vec4 debugOutput2;
-out vec4 debugOutput3;
 
 uniform vec3 cameraPos;
 
@@ -376,17 +373,5 @@ void main(void) {
 		uvOutput = baseColour * texture( lightTex, uv.xy );
 		uvOutput *= uv.b;
 		uvOutput.a = 1.0;
-
-		//vec4 baseColour = texture( baseTexture, uv.xy);
-		//uvOutput = baseColour * 0.15;
-		//uvOutput += baseColour * texture( lightTex, uv.xy );
-		//uvOutput *= uv.b;
-		//uvOutput.a = 1.0;
 	}
-	
-	debugOutput = vec4(noise.x, noise.y, 0.0f, 1);
-
-	debugOutput2 = vec4(hemisphereVectorDebugHolder, 1);
-
-	debugOutput3 = vec4(uv.x, uv.y, 0, 1);
 }

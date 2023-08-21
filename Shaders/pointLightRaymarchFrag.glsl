@@ -336,9 +336,6 @@ if (shadow != 0.0f)
 	// UV coordinates to fragment coordinates
 	startFrag.xy	*= fragDivider;
 
-	//debugOutput = vec4(startFrag.xy, 0.0f, 1.0f);
-
-
 	// End position
 	vec4 endFrag = vec4(rayEndPosition.xyz, 1);
 
@@ -353,8 +350,6 @@ if (shadow != 0.0f)
 
 	// UV coordinates to fragment coordinates
 	endFrag.xy	*= fragDivider;
-
-	//debugOutput2 = vec4(endFrag.xy, 0.0f, 1.0f);
 //////
 
 	//Produce UV coordinate of fragment position
@@ -373,8 +368,6 @@ if (shadow != 0.0f)
 
 	// Divide deltas by greater delta, so largest axis movement is one
 	vec2  increment = vec2(deltaX, deltaY) / delta;
-
-	//debugOutput3 = vec4(increment.x, increment.y, delta, 1.0f);
 
 	vec2 uv = vec2(0.0f);
 

@@ -17,8 +17,6 @@ int main() {
 
 	while (w.UpdateWindow() && !Window::GetKeyboard()->KeyDown(KEYBOARD_ESCAPE)) {
 
-		renderer.setOneCamera();
-
 		renderer.firstCamera();
 		renderer.UpdateScene(w.GetTimer()->GetTimeDeltaSeconds());
 
